@@ -1,0 +1,23 @@
+1.4.1 2008-02-01
+	* Should compile on 64bit OS (so stupid typecasting I used)
+	* Fixed bug preventing intrace from listening to TCP packets
+	without specifying [-p port]
+
+1.4  2007-09-03
+	* Abandonment of libpcap in favor of PF_INET, SOCK_RAW sockets (is it linux only app now?)
+
+1.3  2007-08-20
+	* Minor changes
+	* Disable terminal scrolling
+
+1.2  2007-01-28
+	* Minor improvements within the packet listener.
+
+1.1  2007-01-20
+	* Sould compile on MacOS X (thanks to Jose
+	  Nazario <jose@monkey.org>).
+	* Packet sniffer got a little bit improved algorithm
+	  for ttl-time-exceeded packets analysis.
+
+1.0  2007-01-14
+	* Initial release
