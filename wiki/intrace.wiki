@@ -1,7 +1,7 @@
  == What is that? ==
 
-  InTrace is traceroute-like application that enables users to enumerate
-  IP hops using existing TCP connections, both initiated from
+  InTrace is a traceroute-like application that enables users to enumerate
+  IP hops exploiting existing TCP connections, both initiated from
   local network (local system) or from remote hosts. It could be useful
   for network reconnaissance and firewall bypassing.
 
@@ -38,7 +38,7 @@
 }}}
   ---------------------------------------------------------------------
   
-  Do as it says.. ;)
+  Do as it says!.. ;)
   ---------------------------------------------------------------------
 {{{
      1.    192.158.0.1       [ICMP TTL-EXCEEDED]
@@ -61,11 +61,10 @@
 }}}
   ---------------------------------------------------------------------
 
-  So, we've found pretty NAT appliance at hop 192.88.156.10
+  So, we've found a NAT appliance at the IP: 192.88.156.10
 
-
-  Another try with www.paypal.com -> 216.113.188.65/80 TCP
-  reveals some details of PayPal's internal network structure.
+  Another try, with www.paypal.com -> 216.113.188.65/80 TCP
+  reveals details of PayPal's internal network structure.
   ---------------------------------------------------------------------
 {{{
      1.    217.17.45.185     [ICMP TTL-EXCEEDED]
@@ -84,8 +83,8 @@
 
  == Remotely initiated TCP connection ==
 
-  Take a look at the remotely established TCP connections in the system's
-  TCP tables and pick one
+  Take a look at remotely established TCP connections in your system's
+  TCP tables and pick one (i.e. use netstat)
   ---------------------------------------------------------------------
 {{{
     localhost#	netstat -tanp
@@ -129,7 +128,7 @@
 
   So, we've discovered that the TCP connection is actually initiated from
   behind the NAT appliance (hop # 9), and there is one more IP hop behind that
-  (hop # 10), unfortunately not responding with the icmp time-exceeded.
+  (hop # 10) one, unfortunately not responding with icmp time-exceeded packet.
 
  == Feedback ==
 
