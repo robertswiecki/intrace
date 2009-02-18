@@ -3,4 +3,4 @@ TEST
 [http://www.google.com Google home page]
 [http://&#39;javascript:alert(3) Z]
 
-<wiki:gadget url="http://example.com/gadget.xml&#x3c;" height="200Z" width="300" border="<0" /> 
+<wiki:gadget url="http://example.com/gadget.xml&#x3c;" height="200&#x22;" width="300" border="<0" /> 
