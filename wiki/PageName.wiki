@@ -1,0 +1,4 @@
+TEST
+
+[http://www.google.com Google home page]
+[http://&#39;&#x22;javascript:alert(3) Z]
