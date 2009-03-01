@@ -113,7 +113,7 @@ int display_process(intrace_t * intrace)
 			if (intrace->listener.trace[i].s_addr)
 				pktAddr = inet_ntoa(intrace->listener.trace[i]);
 
-			printf("%3d.    %-18s %-57s\n", i, pktAddr, pktType);
+			printf("%3d.    %-18s %-49s\n", i, pktAddr, pktType);
 
 		}
 
