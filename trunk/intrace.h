@@ -21,6 +21,7 @@ typedef struct {
 
 	char *hostname;
 	uint16_t port;
+	unsigned int paylSz;
 
 	struct in_addr rip;
 	struct in_addr lip;
