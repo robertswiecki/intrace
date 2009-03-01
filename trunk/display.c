@@ -55,18 +55,22 @@ static inline void display_clr(void)
 	printf("\033[H\033[2J");
 }
 
+static inline void display_cursPos(unsigned int x, unsigned int y)
+{
+	/* Move cursor to pos x,y */
+	printf("\033[%u;%uH", x, y);
+}
+
 int display_process(intrace_t * intrace)
 {
 	display_disableScroll();
+	display_clr();
 
 	for (;;) {
-		display_clr();
+		display_cursPos(0, 0);
 
 		char *header = INTRACE_NAME " " INTRACE_VERSION " " INTRACE_AUTHORS "\n";
 		printf("%s", header);
-
-		for (int i = 0; i < (strlen(header) - 1); i++)
-			printf("-");
 
 		/* Lock mutex */
 		while (pthread_mutex_lock(&intrace->mutex)) ;
@@ -74,39 +78,43 @@ int display_process(intrace_t * intrace)
 		printf("\nR: %s/%d ", inet_ntoa(intrace->rip), intrace->rport);
 		intrace->port ? printf("(%d)", intrace->port) : printf("(ANY)");
 
-		printf(" L: %s/%d\nLast rcvd SEQ: 0x%08x, ACK: 0x%08x\n",
+		printf(" L: %s/%d\nSEQ: 0x%08x, ACK: 0x%08x\n",
 		       inet_ntoa(intrace->lip), intrace->lport, intrace->seq, intrace->ack);
 
 		if (intrace->cnt >= MAX_HOPS)
 			intrace->cnt = 0;
 
 		if (!intrace->seq)
-			printf("Waiting to acquire enough packets\n\n");
+			printf("%-75s", "Status: Sniffing for connection packets");
 		else if (!intrace->cnt)
-			printf("Press ENTER to start sending packets\n\n");
+			printf("%-75s", "Status: Press ENTER");
 		else
-			printf("Packets sent #: %d\n\n", intrace->cnt - 1);
+			printf("Status: Packets sent #%-50d", intrace->cnt - 1);
+
+		printf("\n\n");
 
 		for (int i = 1; i <= intrace->maxhop; i++) {
 
-			if (intrace->listener.trace[i].s_addr)
-				printf("%3d.    %-18s", i, inet_ntoa(intrace->listener.trace[i]));
-			else
-				printf("%3d.    %-18s", i, "     ---");
+			const char *pktType = "[NO RESPONSE]";
 
 			if (intrace->listener.proto[i] == IPPROTO_TCP)
-				printf("    [TCP REPLY]\n");
+				pktType = "[TCP REPLY]";
 			else if (intrace->listener.proto[i] == IPPROTO_ICMP) {
 
-				printf("[ICMP TTL-EXCEEDED]");
-				if (intrace->listener.trace[i].s_addr == intrace->rip.s_addr)
-					printf("  [NAT]");
+				if (intrace->listener.trace[i].s_addr != intrace->rip.s_addr)
+					pktType = "[ICMP TTL-EXCEEDED]";
+				else
+					pktType = "[ICMP TTL-EXCEEDED] [NAT?]";
+				
+			} else if (intrace->listener.proto[i] == -1)
+				pktType = "[TCP RST]";
 
-				printf("\n");
-			} else if (intrace->listener.proto[i] == -1) {
-				printf("     [TCP RST]\n");
-			} else
-				printf("   [NO RESPONSE]\n");
+			const char *pktAddr = "***";
+			if (intrace->listener.trace[i].s_addr)
+				pktAddr = inet_ntoa(intrace->listener.trace[i]);
+
+			printf("%3d.    %-18s %-57s\n", i, pktAddr, pktType);
+
 		}
 
 		if (display_selectInput() > 0) {
@@ -114,6 +122,7 @@ int display_process(intrace_t * intrace)
 				intrace->cnt = 1;
 				intrace->maxhop = 0;
 				bzero(intrace->listener.trace, sizeof(intrace->listener.trace));
+				display_clr();
 			}
 		}
 

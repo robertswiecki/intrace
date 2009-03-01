@@ -106,7 +106,9 @@ static void sender_process(intrace_t * intrace)
 		if ((intrace->cnt > 0) && (intrace->cnt < MAX_HOPS)) {
 
 			sender_sendpkt(intrace);
+				usleep(1000);
 			sender_sendpkt(intrace);
+				usleep(1000);
 			sender_sendpkt(intrace);
 
 			intrace->cnt++;
