@@ -28,9 +28,9 @@ static void listener_tcp(intrace_t * intrace, pkt_t * pkt, uint32_t pktlen)
 
 	if (intrace->port && ntohs(tcph->th_dport) != intrace->port &&
 			ntohs(tcph->th_sport) != intrace->port) {
-/* That's bad ;) */
+/* That's insecure!! ;) */
 	} else if ((tcph->th_flags & TH_ACK) &&
-	    ((intrace->ack + PAYL_SZ) == ntohl(tcph->th_ack)) &&
+	    (((intrace->ack + intrace->paylSz) == ntohl(tcph->th_ack)) || (intrace->ack + intrace->paylSz + 1) == ntohl(tcph->th_ack)) &&
 	    (intrace->rip.s_addr == pkt->iph.ip_src.s_addr) && intrace->cnt && intrace->cnt < MAX_HOPS) {
 
 		int hop = intrace->cnt - 1;

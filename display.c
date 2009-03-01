@@ -75,11 +75,11 @@ int display_process(intrace_t * intrace)
 		/* Lock mutex */
 		while (pthread_mutex_lock(&intrace->mutex)) ;
 
-		printf("\nR: %s/%d ", inet_ntoa(intrace->rip), intrace->rport);
-		intrace->port ? printf("(%d)", intrace->port) : printf("(ANY)");
+		printf("\nR: %s/%d (%d) L: %s/%d \n", inet_ntoa(intrace->rip), intrace->rport,
+			intrace->port ? intrace->port : 0, inet_ntoa(intrace->lip), intrace->lport);
 
-		printf(" L: %s/%d\nSEQ: 0x%08x, ACK: 0x%08x\n",
-		       inet_ntoa(intrace->lip), intrace->lport, intrace->seq, intrace->ack);
+		printf("Payload Size: %u bytes, Seq: 0x%08x, Ack: 0x%08x\n",
+			intrace->paylSz, intrace->seq, intrace->ack);
 
 		if (intrace->cnt >= MAX_HOPS)
 			intrace->cnt = 0;
@@ -95,7 +95,7 @@ int display_process(intrace_t * intrace)
 
 		for (int i = 1; i <= intrace->maxhop; i++) {
 
-			const char *pktType = "[NO RESPONSE]";
+			const char *pktType = "[NO REPLY]";
 
 			if (intrace->listener.proto[i] == IPPROTO_TCP)
 				pktType = "[TCP REPLY]";

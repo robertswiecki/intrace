@@ -46,9 +46,11 @@ static inline uint16_t sender_cksum(uint16_t * addr, size_t cnt, uint16_t * pseu
 	return ~cksum & (uint32_t) 0xffff;
 }
 
-static void sender_sendpkt(intrace_t * intrace)
+static void sender_sendpkt(intrace_t * intrace, int seqSkew, int ackSkew)
 {
 	tcppkt_t pkt;
+	uint16_t pktSz = sizeof(pkt) - MAX_PAYL_SZ + intrace->paylSz;
+
 	struct sockaddr_in raddr;
 	struct {
 		uint32_t saddr;
@@ -62,11 +64,11 @@ static void sender_sendpkt(intrace_t * intrace)
 	raddr.sin_port = htons(intrace->rport);
 	memcpy(&raddr.sin_addr.s_addr, &intrace->rip.s_addr, sizeof(raddr.sin_addr.s_addr));
 
-	bzero(&pkt, sizeof(pkt));
+	bzero(&pkt, pktSz);
 
 	pkt.iph.ip_v = 0x4;
 	pkt.iph.ip_hl = sizeof(pkt.iph) / 4;
-	pkt.iph.ip_len = htons(sizeof(pkt));
+	pkt.iph.ip_len = htons(pktSz);
 	pkt.iph.ip_id = htons(intrace->cnt);
 	pkt.iph.ip_off = htons(IP_DF | (0 & IP_OFFMASK));
 	pkt.iph.ip_ttl = intrace->cnt;
@@ -76,16 +78,16 @@ static void sender_sendpkt(intrace_t * intrace)
 
 	pkt.tcph.th_sport = htons(intrace->lport);
 	pkt.tcph.th_dport = htons(intrace->rport);
-	pkt.tcph.th_seq = htonl(intrace->ack);
-	pkt.tcph.th_ack = htonl(intrace->seq);
+	pkt.tcph.th_seq = htonl(intrace->ack + seqSkew);
+	pkt.tcph.th_ack = htonl(intrace->seq + ackSkew);
 	pkt.tcph.th_off = sizeof(pkt.tcph) / 4;
 	pkt.tcph.th_flags = TH_ACK;
 	pkt.tcph.th_win = htons(0xFFFF);
 	pkt.tcph.th_urp = htons(0x0);
 
-	memset(&pkt.payload, '\0', sizeof(pkt.payload));
+	memset(&pkt.payload, '\0', intrace->paylSz);
 
-	uint16_t l4len = sizeof(pkt) - sizeof(pkt.iph);
+	uint16_t l4len = pktSz - sizeof(pkt.iph);
 	pseudoh.saddr = pkt.iph.ip_src.s_addr;
 	pseudoh.daddr = pkt.iph.ip_dst.s_addr;
 	pseudoh.zero = 0x0;
@@ -94,7 +96,7 @@ static void sender_sendpkt(intrace_t * intrace)
 
 	pkt.tcph.th_sum = sender_cksum((u_int16_t *) & pkt.tcph, l4len, (u_int16_t *) & pseudoh, sizeof(pseudoh));
 
-	sendto(intrace->sender.sndSocket, &pkt, sizeof(pkt), MSG_NOSIGNAL,
+	sendto(intrace->sender.sndSocket, &pkt, pktSz, MSG_NOSIGNAL,
 	       (struct sockaddr *)&raddr, sizeof(struct sockaddr));
 }
 
@@ -105,11 +107,10 @@ static void sender_process(intrace_t * intrace)
 
 		if ((intrace->cnt > 0) && (intrace->cnt < MAX_HOPS)) {
 
-			sender_sendpkt(intrace);
-				usleep(1000);
-			sender_sendpkt(intrace);
-				usleep(1000);
-			sender_sendpkt(intrace);
+			sender_sendpkt(intrace, 0, 0);
+			sender_sendpkt(intrace, -1, 0);
+			sender_sendpkt(intrace, 0, 1);
+			sender_sendpkt(intrace, -1, 1);
 
 			intrace->cnt++;
 		}
