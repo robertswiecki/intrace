@@ -98,30 +98,34 @@ int display_process(intrace_t * intrace)
 			const char *pktType = "[NO REPLY]";
 
 			if (intrace->listener.proto[i] == IPPROTO_TCP)
-				pktType = "[TCP REPLY]";
+				pktType = "[TCP]";
 			else if (intrace->listener.proto[i] == IPPROTO_ICMP) {
 
-				if (intrace->listener.trace[i].s_addr != intrace->rip.s_addr)
-					pktType = "[ICMP TTL-EXCEEDED]";
+				if (intrace->listener.ip_trace[i].s_addr != intrace->rip.s_addr)
+					pktType = "[ICMP_TIMXCEED]";
 				else
-					pktType = "[ICMP TTL-EXCEEDED] [NAT?]";
+					pktType = "[ICMP_TIMXCEED] [NAT]";
 				
 			} else if (intrace->listener.proto[i] == -1)
-				pktType = "[TCP RST]";
+				pktType = "[TCP_RST]";
 
-			const char *pktAddr = "***";
-			if (intrace->listener.trace[i].s_addr)
-				pktAddr = inet_ntoa(intrace->listener.trace[i]);
+			char ipPktAddr[] = "      ***      ";
+			if (intrace->listener.ip_trace[i].s_addr)
+				strncpy(ipPktAddr, inet_ntoa(intrace->listener.ip_trace[i]), strlen(ipPktAddr));
 
-			printf("%3d.    %-18s %-49s\n", i, pktAddr, pktType);
+			char icmpPktAddr[] = "      ***      ";
+			if (intrace->listener.icmp_trace[i].s_addr)
+				strncpy(icmpPktAddr, inet_ntoa(intrace->listener.icmp_trace[i]), strlen(icmpPktAddr));
 
+			printf("%2d. %-15s [%-15s] %-40s\n", i, ipPktAddr, icmpPktAddr, pktType);
 		}
 
 		if (display_selectInput() > 0) {
 			if (!intrace->cnt && intrace->seq) {
 				intrace->cnt = 1;
 				intrace->maxhop = 0;
-				bzero(intrace->listener.trace, sizeof(intrace->listener.trace));
+				bzero(intrace->listener.ip_trace, sizeof(intrace->listener.ip_trace));
+				bzero(intrace->listener.icmp_trace, sizeof(intrace->listener.icmp_trace));
 				display_clr();
 			}
 		}

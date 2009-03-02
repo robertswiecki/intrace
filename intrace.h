@@ -36,7 +36,8 @@ typedef struct {
 	struct {
 		int rcvSocketTCP;
 		int rcvSocketICMP;
-		struct in_addr trace[MAX_HOPS + 1];
+		struct in_addr ip_trace[MAX_HOPS + 1];
+		struct in_addr icmp_trace[MAX_HOPS + 1];
 		int16_t proto[MAX_HOPS + 1];
 	} listener;
 
