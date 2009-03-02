@@ -34,11 +34,11 @@ static void listener_tcp(intrace_t * intrace, pkt_t * pkt, uint32_t pktlen)
 	    (intrace->rip.s_addr == pkt->iph.ip_src.s_addr) && intrace->cnt && intrace->cnt < MAX_HOPS) {
 
 		int hop = intrace->cnt - 1;
-		memcpy(&intrace->listener.trace[hop].s_addr, &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));
 		intrace->listener.proto[hop] = IPPROTO_TCP;
+		memcpy(&intrace->listener.ip_trace[hop].s_addr, &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));
 		intrace->maxhop = hop;
-
 		intrace->cnt = MAX_HOPS;
+
 	} else if ((tcph->th_flags & TH_RST) && intrace->cnt &&
 		   (intrace->rip.s_addr == pkt->iph.ip_src.s_addr) &&
 		   (intrace->lip.s_addr == pkt->iph.ip_dst.s_addr) &&
@@ -46,11 +46,11 @@ static void listener_tcp(intrace_t * intrace, pkt_t * pkt, uint32_t pktlen)
 		   (intrace->rport == ntohs(tcph->th_sport)) && intrace->cnt && intrace->cnt < MAX_HOPS) {
 
 		int hop = intrace->cnt - 1;
-		memcpy(&intrace->listener.trace[hop].s_addr, &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));
+		memcpy(&intrace->listener.ip_trace[hop].s_addr, &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));
 		intrace->listener.proto[hop] = -1;
 		intrace->maxhop = hop;
-
 		intrace->cnt = MAX_HOPS;
+
 	} else if (intrace->rip.s_addr == pkt->iph.ip_src.s_addr) {
 
 		memcpy(&intrace->lip, &pkt->iph.ip_dst, sizeof(pkt->iph.ip_dst));
@@ -113,11 +113,15 @@ static void listener_icmp(intrace_t * intrace, pkt_t * pkt, uint32_t pktlen)
 		return;
 	}
 
-	memcpy(&intrace->listener.trace[id].s_addr, &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));
+	icmpbdy_t *pkticmp = (icmpbdy_t *)((uint8_t*)&pkt->iph + ((uint32_t)pkt->iph.ip_hl * 4));
+	
+	/* Unsecure */
+	memcpy(&intrace->listener.ip_trace[id].s_addr, &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));
+	memcpy(&intrace->listener.icmp_trace[id].s_addr, &pkticmp->iph.ip_dst, sizeof(pkticmp->iph.ip_dst));
 	intrace->listener.proto[id] = IPPROTO_ICMP;
 
-	if (id > intrace->maxhop) ;
-	intrace->maxhop = id;
+	if (id > intrace->maxhop)
+		intrace->maxhop = id;
 
 	while (pthread_mutex_unlock(&intrace->mutex)) ;
 }
