@@ -81,7 +81,7 @@ static void sender_sendpkt(intrace_t * intrace, int seqSkew, int ackSkew)
 	pkt.tcph.th_seq = htonl(intrace->ack + seqSkew);
 	pkt.tcph.th_ack = htonl(intrace->seq + ackSkew);
 	pkt.tcph.th_off = sizeof(pkt.tcph) / 4;
-	pkt.tcph.th_flags = TH_ACK;
+	pkt.tcph.th_flags = TH_ACK | TH_PUSH;
 	pkt.tcph.th_win = htons(0xFFFF);
 	pkt.tcph.th_urp = htons(0x0);
 
