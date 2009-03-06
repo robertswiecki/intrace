@@ -69,14 +69,16 @@ int display_process(intrace_t * intrace)
 	for (;;) {
 		display_cursPos(0, 0);
 
-		char *header = INTRACE_NAME " " INTRACE_VERSION " " INTRACE_AUTHORS "\n";
-		printf("%s", header);
-
 		/* Lock mutex */
 		while (pthread_mutex_lock(&intrace->mutex)) ;
 
-		printf("\nR: %s/%d (%d) L: %s/%d \n", inet_ntoa(intrace->rip), intrace->rport,
-			intrace->port ? intrace->port : 0, inet_ntoa(intrace->lip), intrace->lport);
+		char locAddr[32], rmtAddr[32];
+		strcpy(locAddr, inet_ntoa(intrace->lip));
+		strcpy(rmtAddr, inet_ntoa(intrace->rip));
+
+		printf("%s %s -- R: %s/%d (%d) L: %s/%d\n", INTRACE_NAME, INTRACE_VERSION,
+			rmtAddr, intrace->rport,
+			intrace->port ? intrace->port : 0, locAddr, intrace->lport);
 
 		printf("Payload Size: %u bytes, Seq: 0x%08x, Ack: 0x%08x\n",
 			intrace->paylSz, intrace->seq, intrace->ack);
@@ -92,22 +94,23 @@ int display_process(intrace_t * intrace)
 			printf("Status: Packets sent #%-50d", intrace->cnt - 1);
 
 		printf("\n\n");
+		printf("%3s  %-17s  %-17s  %s\n", "#", "[src addr]", "[icmp src addr]", "[pkt type]");
 
 		for (int i = 1; i <= intrace->maxhop; i++) {
 
-			const char *pktType = "[NO REPLY]";
+			const char *pktType = "NO REPLY";
 
 			if (intrace->listener.proto[i] == IPPROTO_TCP)
-				pktType = "[TCP]";
+				pktType = "TCP";
 			else if (intrace->listener.proto[i] == IPPROTO_ICMP) {
 
 				if (intrace->listener.ip_trace[i].s_addr != intrace->rip.s_addr)
-					pktType = "[ICMP_TIMXCEED]";
+					pktType = "ICMP_TIMXCEED";
 				else
-					pktType = "[ICMP_TIMXCEED] [NAT]";
+					pktType = "ICMP_TIMXCEED NAT";
 				
 			} else if (intrace->listener.proto[i] == -1)
-				pktType = "[TCP_RST]";
+				pktType = "TCP_RST";
 
 			char ipPktAddr[] = "      ***      ";
 			if (intrace->listener.ip_trace[i].s_addr)
@@ -117,7 +120,7 @@ int display_process(intrace_t * intrace)
 			if (intrace->listener.icmp_trace[i].s_addr)
 				strncpy(icmpPktAddr, inet_ntoa(intrace->listener.icmp_trace[i]), strlen(icmpPktAddr));
 
-			printf("%2d. %-15s [%-15s] %-40s\n", i, ipPktAddr, icmpPktAddr, pktType);
+			printf("%2d.  [%-15s]  [%-15s]  [%s]\n", i, ipPktAddr, icmpPktAddr, pktType);
 		}
 
 		if (display_selectInput() > 0) {
