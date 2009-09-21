@@ -1,5 +1,5 @@
 
-                                   InTrace                                   
+                                   InTrace
                                    -------
 
                            http://www.swiecki.net
@@ -14,6 +14,21 @@
   local network (local system) or from remote hosts. It could be useful
   for network reconnaissance and firewall bypassing.
 
+/*
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ */
 
 2. Locally initiated TCP connection
 ===================================
@@ -26,8 +41,8 @@
     Last rcvd SEQ: 0, ACK: 0
     Waiting to acquire enough packets
   ---------------------------------------------------------------------
- 
-  Establish TCP connection:
+
+  Establish a TCP connection:
   ---------------------------------------------------------------------
     localhost$ nc www.freescale.com 80
     GET / HTTP/1.0
@@ -40,8 +55,8 @@
     Last rcvd SEQ: 1400545495, ACK: 3344758762
     Press ENTER to start sending packets
   ---------------------------------------------------------------------
-  
-  Do as it says.. ;)
+
+  Do as it says!.. ;)
   ---------------------------------------------------------------------
      1.    192.158.0.1       [ICMP TTL-EXCEEDED]
      2.    212.76.62.233     [ICMP TTL-EXCEEDED]
@@ -62,10 +77,9 @@
     17.    192.88.156.10         [TCP REPLY]
   ---------------------------------------------------------------------
 
-  So, we've found pretty NAT appliance at hop 192.88.156.10
+  So, we found a NAT appliance at the 192.88.156.10 hop
 
-
-  Another try with www.paypal.com -> 216.113.188.65/80 TCP
+  One more try with www.paypal.com -> 216.113.188.65/80 TCP
   reveals some details of PayPal's internal network structure.
   ---------------------------------------------------------------------
      1.    217.17.45.185     [ICMP TTL-EXCEEDED]
@@ -84,8 +98,8 @@
 3. Remotely initiated TCP connection
 ====================================
 
-  Take a look at remotely established TCP connections in the system's
-  TCP tables and pick one
+  Take a look at remotely established TCP connections in the system
+  TCP table and pick one of them
   ---------------------------------------------------------------------
     localhost#	netstat -tanp
     Active Internet connections (servers and established)
@@ -95,12 +109,12 @@
     ...
   ---------------------------------------------------------------------
 
-  Run InTrace ...
+  Start InTrace ...
   ---------------------------------------------------------------------
     localhost# ./intrace -i eth0 -h 217.17.34.18
   ---------------------------------------------------------------------
 
-  ... wait for a few packets (exchanged within that connection), then
+  ... wait for few packets (exchanged within the connection), then
   press ENTER.
   ---------------------------------------------------------------------
     InTrace 1.2 (C)2007 Robert Swiecki <robert@swiecki.net>
@@ -121,9 +135,9 @@
     11.    217.17.34.18          [TCP REPLY]
   ---------------------------------------------------------------------
 
-  So, we've discovered that the TCP connection is actually initiated from
-  behind NAT appliance (hop # 9), and there is one more IP hop behind it
-  (hop # 10), unfortunately not responding with icmp time-exceeded.
+  So, we know now that the TCP connection is actually initiated from
+  behind the NAT appliance (hop # 9), and there is one more IP hop behind
+ this one (hop # 10), unfortunately not responding with icmp time-exceeded.
 
 4. Feedback
 ====================================
