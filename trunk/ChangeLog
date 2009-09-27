@@ -1,3 +1,8 @@
+1.4.3 2009-09-27
+	* License headers
+	* Minor Makefile fixes
+	* Don't remember....
+
 1.4.1 2008-02-01
 	* Should compile on 64bit OS (so stupid typecasting I used)
 	* Fixed bug preventing intrace from listening to TCP packets
