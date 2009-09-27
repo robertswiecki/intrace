@@ -16,9 +16,6 @@
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
 
 
-SRCDIR := $(shell pwd)
-PLUGINS := plug-ins
-
 CC = gcc
 CFLAGS = -fPIC -O3 -g -ggdb -c -std=gnu99 -I. -pedantic \
 		 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
