@@ -4,6 +4,11 @@
  * Sender
  *
  * author: Robert Swiecki <robert@swiecki,net>
+ *
+ * sender_cksum_tcp author:
+ *  Copyright (C) 2002 Sourcefire,Inc
+ *  Marc Norton <mnorton@sourcefire.com>
+ *  http://www.google.com/codesearch/p?hl=en&sa=N&cd=1&ct=rc#BAGwO4Atb2c/snort-1.9.1/src/checksum.h
  */
 
 /*
@@ -38,28 +43,77 @@
 
 #include <intrace.h>
 
-/* The procedure was found on the Internet - unknown license status!!! */
-static inline uint16_t sender_cksum(uint16_t * addr, size_t cnt, uint16_t * pseudo, size_t pseudosz)
+static inline unsigned short sender_cksum_tcp(u_int16_t * h, u_int16_t * d,
+					      int dlen)
 {
-	register uint32_t cksum = 0;
+	unsigned int cksum;
+	unsigned short answer = 0;
 
-	while (cnt > 1) {
-		cksum += *(addr++);
-		cnt -= 2;
+	cksum = h[0];
+	cksum += h[1];
+	cksum += h[2];
+	cksum += h[3];
+	cksum += h[4];
+	cksum += h[5];
+
+	cksum += d[0];
+	cksum += d[1];
+	cksum += d[2];
+	cksum += d[3];
+	cksum += d[4];
+	cksum += d[5];
+	cksum += d[6];
+	cksum += d[7];
+	cksum += d[8];
+	cksum += d[9];
+
+	dlen -= 20;
+	d += 10;
+
+	while (dlen >= 32) {
+		cksum += d[0];
+		cksum += d[1];
+		cksum += d[2];
+		cksum += d[3];
+		cksum += d[4];
+		cksum += d[5];
+		cksum += d[6];
+		cksum += d[7];
+		cksum += d[8];
+		cksum += d[9];
+		cksum += d[10];
+		cksum += d[11];
+		cksum += d[12];
+		cksum += d[13];
+		cksum += d[14];
+		cksum += d[15];
+		d += 16;
+		dlen -= 32;
 	}
 
-	while (pseudosz > 1) {
-		cksum += *(pseudo++);
-		pseudosz -= 2;
+	while (dlen >= 8) {
+		cksum += d[0];
+		cksum += d[1];
+		cksum += d[2];
+		cksum += d[3];
+		d += 4;
+		dlen -= 8;
 	}
 
-	if (cnt > 0)
-		cksum += *(uint8_t *) addr;
+	while (dlen > 1) {
+		cksum += *d++;
+		dlen -= 2;
+	}
 
-	while (cksum >> 16)
-		cksum = (cksum & 0xffff) + (cksum >> 16);
+	if (dlen == 1) {
+		*(unsigned char *)(&answer) = (*(unsigned char *)d);
+		cksum += answer;
+	}
 
-	return ~cksum & (uint32_t) 0xffff;
+	cksum = (cksum >> 16) + (cksum & 0x0000ffff);
+	cksum += (cksum >> 16);
+
+	return (unsigned short)(~cksum);
 }
 
 static void sender_sendpkt(intrace_t * intrace, int seqSkew, int ackSkew)
@@ -78,7 +132,8 @@ static void sender_sendpkt(intrace_t * intrace, int seqSkew, int ackSkew)
 
 	raddr.sin_family = AF_INET;
 	raddr.sin_port = htons(intrace->rport);
-	memcpy(&raddr.sin_addr.s_addr, &intrace->rip.s_addr, sizeof(raddr.sin_addr.s_addr));
+	memcpy(&raddr.sin_addr.s_addr, &intrace->rip.s_addr,
+	       sizeof(raddr.sin_addr.s_addr));
 
 	bzero(&pkt, pktSz);
 
@@ -110,7 +165,9 @@ static void sender_sendpkt(intrace_t * intrace, int seqSkew, int ackSkew)
 	pseudoh.protocol = pkt.iph.ip_p;
 	pseudoh.tcp_len = htons(l4len);
 
-	pkt.tcph.th_sum = sender_cksum((u_int16_t *) & pkt.tcph, l4len, (u_int16_t *) & pseudoh, sizeof(pseudoh));
+	pkt.tcph.th_sum =
+	    sender_cksum_tcp((u_int16_t *) & pseudoh, (u_int16_t *) & pkt.tcph,
+			     l4len);
 
 	sendto(intrace->sender.sndSocket, &pkt, pktSz, MSG_NOSIGNAL,
 	       (struct sockaddr *)&raddr, sizeof(struct sockaddr));
@@ -144,11 +201,14 @@ int sender_init(intrace_t * intrace)
 	intrace->sender.sndSocket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 	if (intrace->sender.sndSocket < 0) {
 		strerror_r(errno, errbuf, sizeof(errbuf) - 1);
-		debug_printf(dlError, "sender: Cannot open raw socket, %s\n", errbuf);
+		debug_printf(dlError, "sender: Cannot open raw socket, %s\n",
+			     errbuf);
 		return errSocket;
 	}
 
-	if (setsockopt(intrace->sender.sndSocket, IPPROTO_IP, IP_HDRINCL, (char *)&tmp, sizeof(tmp))) {
+	if (setsockopt
+	    (intrace->sender.sndSocket, IPPROTO_IP, IP_HDRINCL, (char *)&tmp,
+	     sizeof(tmp))) {
 		debug_printf(dlError, "sender: Cannot setsockopt on socket\n");
 		close(intrace->sender.sndSocket);
 		return errSocket;
