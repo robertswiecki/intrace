@@ -78,33 +78,42 @@ int threads_process(intrace_t * intrace)
 
 	debug_printf(dlDebug, "Resolving '%s'\n", intrace->hostname);
 	if (!(he = gethostbyname(intrace->hostname))) {
-		debug_printf(dlFatal, "threads: Cannot resolve IPv4 for '%s': '%s' (%d).\n", intrace->hostname,
-			     thread_err2asc(h_errno), h_errno);
+		debug_printf(dlFatal,
+			     "threads: Cannot resolve IPv4 for '%s': '%s' (%d).\n",
+			     intrace->hostname, thread_err2asc(h_errno),
+			     h_errno);
 		return errResolve;
 	}
 
 	if (he->h_length != IPVERSION) {
-		debug_printf(dlFatal, "threads: not an IPv4 addr, len=%d\n", he->h_length);
+		debug_printf(dlFatal, "threads: not an IPv4 addr, len=%d\n",
+			     he->h_length);
 		return errResolve;
 	}
 
 	memcpy(&intrace->rip.s_addr, he->h_addr, sizeof(intrace->rip.s_addr));
-	debug_printf(dlDebug, "IPv4 for '%s' resolved='%s'\n", intrace->hostname, inet_ntoa(intrace->rip));
+	debug_printf(dlDebug, "IPv4 for '%s' resolved='%s'\n",
+		     intrace->hostname, inet_ntoa(intrace->rip));
 
 	if ((err = listener_init(intrace)) != errNone) {
-		debug_printf(dlFatal, "threads: Listener initialization failed, err=%d'\n", err);
+		debug_printf(dlFatal,
+			     "threads: Listener initialization failed, err=%d'\n",
+			     err);
 		return err;
 	}
 
 	if ((err = sender_init(intrace)) != errNone) {
-		debug_printf(dlFatal, "threads: Packet sender initialization failed, err=%d\n", err);
+		debug_printf(dlFatal,
+			     "threads: Packet sender initialization failed, err=%d\n",
+			     err);
 		return err;
 	}
 
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	if (pthread_create(&t, &attr, listener_thr, (void *)intrace) < 0) {
-		debug_printf(dlFatal, "threads: Cannot create listener thread\n");
+		debug_printf(dlFatal,
+			     "threads: Cannot create listener thread\n");
 		return errThread;
 	}
 

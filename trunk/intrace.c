@@ -44,7 +44,8 @@ int main(int argc, char **argv)
 	bzero(&intrace, sizeof(intrace_t));
 	intrace.paylSz = 1;
 
-	printf(INTRACE_NAME ", version " INTRACE_VERSION " " INTRACE_AUTHORS"\n");
+	printf(INTRACE_NAME ", version " INTRACE_VERSION " " INTRACE_AUTHORS
+	       "\n");
 
 	for (;;) {
 		c = getopt(argc, argv, "h:p:d:s:");
@@ -76,7 +77,9 @@ int main(int argc, char **argv)
 	}
 
 	if (!intrace.hostname) {
-		debug_printf(dlInfo, "Usage: %s <-h hostname> [-p <port>] [-d <debuglevel>] [-s <payloadsize>]\n", argv[0]);
+		debug_printf(dlInfo,
+			     "Usage: %s <-h hostname> [-p <port>] [-d <debuglevel>] [-s <payloadsize>]\n",
+			     argv[0]);
 		return errArg;
 	}
 
