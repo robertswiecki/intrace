@@ -30,8 +30,19 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 #include <intrace.h>
+
+// For setuid case only
+static int threads_dropPrivs(void)
+{
+	if (setuid(getuid()) == -1)
+		return errPrivs;
+
+	return errNone;
+}
 
 extern int h_errno;
 
@@ -105,6 +116,13 @@ int threads_process(intrace_t * intrace)
 	if ((err = sender_init(intrace)) != errNone) {
 		debug_printf(dlFatal,
 			     "threads: Packet sender initialization failed, err=%d\n",
+			     err);
+		return err;
+	}
+
+	if ((err = threads_dropPrivs()) != errNone) {
+		debug_printf(dlFatal,
+			     "threads: Couldn't drop privileges, err=%d\n",
 			     err);
 		return err;
 	}

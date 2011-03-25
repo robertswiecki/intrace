@@ -135,15 +135,15 @@ int display_process(intrace_t * intrace)
 			char ipPktAddr[] = "      ***      ";
 			if (intrace->listener.ip_trace[i].s_addr)
 				strncpy(ipPktAddr,
-					inet_ntoa(intrace->listener.
-						  ip_trace[i]),
+					inet_ntoa(intrace->
+						  listener.ip_trace[i]),
 					strlen(ipPktAddr));
 
 			char icmpPktAddr[] = "      ***      ";
 			if (intrace->listener.icmp_trace[i].s_addr)
 				strncpy(icmpPktAddr,
-					inet_ntoa(intrace->listener.
-						  icmp_trace[i]),
+					inet_ntoa(intrace->
+						  listener.icmp_trace[i]),
 					strlen(icmpPktAddr));
 
 			printf("%2d.  [%-15s]  [%-15s]  [%s]\n", i, ipPktAddr,
