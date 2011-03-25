@@ -172,8 +172,8 @@ static void listener_process(intrace_t * intrace)
 
 		int maxFd =
 		    (intrace->listener.rcvSocketTCP >
-		     intrace->listener.rcvSocketICMP) ? intrace->listener.
-		    rcvSocketTCP : intrace->listener.rcvSocketICMP;
+		     intrace->listener.rcvSocketICMP) ? intrace->
+		    listener.rcvSocketTCP : intrace->listener.rcvSocketICMP;
 
 		if (select(maxFd + 1, &fds, NULL, NULL, NULL) < 1)
 			continue;
