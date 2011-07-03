@@ -12,11 +12,10 @@
   Run intrace:
   ---------------------------------------------------------------------
 {{{
-    localhost# ./intrace -i eth0 -h www.freescale.com
-    InTrace 1.2 (C)2007 Robert Swiecki <robert@swiecki.net>
-    R: 192.88.156.10/ANY (0)  L: 0.0.0.0/0
-    Last rcvd SEQ: 0, ACK: 0
-    Waiting to acquire enough packets
+# ./intrace --h www.freescale.com
+InTrace 1.4.3 -- R: 192.88.156.10/0 (0) L: 0.0.0.0/0
+Payload Size: 1 bytes, Seq: 0x00000000, Ack: 0x00000000
+Status: Sniffing for connection packets
 }}}  
 
   ---------------------------------------------------------------------
@@ -32,40 +31,33 @@
   Take a look at the InTrace output:
   ---------------------------------------------------------------------
 {{{
-    InTrace 1.2 (C)2007 Robert Swiecki <robert@swiecki.net>
-    R: 192.88.156.10/ANY (80)  L: 192.168.0.5/40005
-    Last rcvd SEQ: 1400545495, ACK: 3344758762
-    Press ENTER to start sending packets
+InTrace 1.4.3 -- R: 192.88.156.10/80 (0) L: 94.103.100.50/50049
+Payload Size: 1 bytes, Seq: 0xede67714, Ack: 0x8164047b
+Status: Press ENTER
 }}}
   ---------------------------------------------------------------------
-  
+
   Do as it says!.. ;)
   ---------------------------------------------------------------------
 {{{
-     1.    192.158.0.1       [ICMP TTL-EXCEEDED]
-     2.    212.76.62.233     [ICMP TTL-EXCEEDED]
-     3.         ---             [NO RESPONSE]
-     4.    212.76.35.70      [ICMP TTL-EXCEEDED]
-     5.    212.76.35.173     [ICMP TTL-EXCEEDED]
-     6.    213.248.77.201    [ICMP TTL-EXCEEDED]
-     7.         ---             [NO RESPONSE]
-     8.    213.248.96.25     [ICMP TTL-EXCEEDED]
-     9.    80.91.249.137     [ICMP TTL-EXCEEDED]
-    10.    213.248.77.182    [ICMP TTL-EXCEEDED]
-    11.    67.17.68.22       [ICMP TTL-EXCEEDED]
-    12.    64.212.225.214    [ICMP TTL-EXCEEDED]
-    13.    69.25.168.1       [ICMP TTL-EXCEEDED]
-    14.    69.25.127.90      [ICMP TTL-EXCEEDED]
-    15.    191.83.158.250    [ICMP TTL-EXCEEDED]
-    16.    192.88.156.10     [ICMP TTL-EXCEEDED]  [NAT]
-    17.    192.88.156.10         [TCP REPLY]
+  #  [src addr]         [icmp src addr]    [pkt type]
+ 1.  [194.55.39.1    ]  [192.88.156.10  ]  [ICMP_TIMXCEED]
+ 2.  [194.29.3.254   ]  [192.88.156.10  ]  [ICMP_TIMXCEED]
+ 3.  [62.179.116.149 ]  [192.88.156.10  ]  [ICMP_TIMXCEED]
+ 4.  [213.46.171.42  ]  [192.88.156.10  ]  [ICMP_TIMXCEED]
+ 5.  [89.149.182.49  ]  [192.88.156.10  ]  [ICMP_TIMXCEED]
+ 6.  [77.67.94.74    ]  [192.88.156.10  ]  [ICMP_TIMXCEED]
+ 7.  [69.25.168.65   ]  [192.88.156.10  ]  [ICMP_TIMXCEED]
+ 8.  [69.25.127.90   ]  [192.88.156.10  ]  [ICMP_TIMXCEED]
+ 9.  [192.88.158.250 ]  [192.88.156.10  ]  [ICMP_TIMXCEED]
+10.  [192.88.156.10  ]  [192.88.156.10  ]  [ICMP_TIMXCEED NAT]
+11.  [192.88.156.10  ]  [      ***      ]  [TCP]
 }}}
   ---------------------------------------------------------------------
 
-  So, we've found a NAT appliance at the IP: 192.88.156.10
+  And so discovered a NAT appliance at IP: 192.88.156.10
 
-  Another try, with www.paypal.com -> 216.113.188.65/80 TCP
-  reveals details of PayPal's internal network structure.
+  Another try, this time with www.paypal.com -> 216.113.188.65/80 TCP reveals details of PayPal's internal network structure.
   ---------------------------------------------------------------------
 {{{
      1.    217.17.45.185     [ICMP TTL-EXCEEDED]
