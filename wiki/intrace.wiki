@@ -31,7 +31,7 @@ Status: Sniffing for connection packets
   Take a look at the InTrace output:
   ---------------------------------------------------------------------
 {{{
-InTrace 1.4.3 -- R: 192.88.156.10/80 (0) L: 94.103.100.50/50049
+InTrace 1.4.3 -- R: 192.88.156.10/80 (0) L: 194.55.39.1/50049
 Payload Size: 1 bytes, Seq: 0xede67714, Ack: 0x8164047b
 Status: Press ENTER
 }}}
