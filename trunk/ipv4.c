@@ -168,13 +168,27 @@ void ipv4_sendpkt(intrace_t * intrace, int seqSkew, int ackSkew)
 	       sizeof(struct sockaddr));
 }
 
+static inline int ipv4_checkTcp(intrace_t * intrace, ip4pkt_t * pkt, uint32_t pktlen)
+{
+	if (pktlen < sizeof(struct ip))
+		return errPkt;
+
+	if (pktlen < ((pkt->iph.ip_hl * 4) + sizeof(struct tcphdr)))
+		return errPkt;
+
+	return errNone;
+}
+
 void ipv4_tcp_sock_ready(intrace_t * intrace, struct msghdr *msg)
 {
 	ip4pkt_t *pkt = msg->msg_iov->iov_base;
+	uint32_t pktlen = msg->msg_iov->iov_len;
 
-	struct tcphdr *tcph = (struct tcphdr *)((uint8_t *) & pkt->iph + ((uint32_t) pkt->iph.ip_hl * 4));
+	if (ipv4_checkTcp(intrace, pkt, pktlen) < 0)
+		return;
 
 	while (pthread_mutex_lock(&intrace->mutex)) ;
+	struct tcphdr *tcph = (struct tcphdr *)((uint8_t *) & pkt->iph + ((uint32_t) pkt->iph.ip_hl * 4));
 
 	if (intrace->port && ntohs(tcph->th_dport) != intrace->port && ntohs(tcph->th_sport) != intrace->port) {
 /* UNSAFE_ Fix length check */
@@ -219,7 +233,10 @@ static inline int ipv4_checkIcmp(intrace_t * intrace, ip4pkt_t * pkt, uint32_t p
 {
 	icmp4bdy_t *pkticmp = (icmp4bdy_t *) ((uint8_t *) & pkt->iph + ((uint32_t) pkt->iph.ip_hl * 4));
 
-	if (((uint8_t *) pkticmp - (uint8_t *) pkt + sizeof(struct icmphdr) + sizeof(struct ip)) > pktlen)
+	if (pktlen < sizeof(struct ip))
+		return errPkt;
+
+	if (pktlen < ((pkt->iph.ip_hl * 4) + sizeof(struct icmphdr) + sizeof(struct ip)))
 		return errPkt;
 
 #ifdef __linux__
@@ -251,19 +268,16 @@ void ipv4_icmp_sock_ready(intrace_t * intrace, struct msghdr *msg)
 	ip4pkt_t *pkt = msg->msg_iov->iov_base;
 	uint32_t pktlen = msg->msg_iov->iov_len;
 
-	while (pthread_mutex_lock(&intrace->mutex)) ;
-
 	if (intrace->maxhop >= MAX_HOPS) {
-		while (pthread_mutex_unlock(&intrace->mutex)) ;
 		return;
 	}
 
 	int id;
 	if ((id = ipv4_checkIcmp(intrace, pkt, pktlen)) < 0) {
-		while (pthread_mutex_unlock(&intrace->mutex)) ;
 		return;
 	}
 
+	while (pthread_mutex_lock(&intrace->mutex)) ;
 	icmp4bdy_t *pkticmp = (icmp4bdy_t *) ((uint8_t *) & pkt->iph + ((uint32_t) pkt->iph.ip_hl * 4));
 
 	memcpy(&intrace->listener.ip_trace[id].s_addr, &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));

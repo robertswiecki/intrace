@@ -66,7 +66,7 @@ static void sender_process(intrace_t * intrace)
 		}
 
 		while (pthread_mutex_unlock(&intrace->mutex)) ;
-		usleep(500000);
+		usleep(750000);
 	}
 }
 
