@@ -32,7 +32,7 @@ struct icmp4bdy {
 typedef struct icmp4bdy icmp4bdy_t;
 
 extern void ipv4_sendpkt(intrace_t * intrace, int seqSkew, int ackSkew);
-extern void ipv4_got_tcp(intrace_t * intrace, ip4pkt_t * pkt, uint32_t pktlen, struct sockaddr_in *sa);
-extern void ipv4_got_icmp(intrace_t * intrace, ip4pkt_t * pkt, uint32_t pktlen, struct sockaddr_in *sa);
+extern void ipv4_tcp_sock_ready(intrace_t * intrace, int sock);
+extern void ipv4_icmp_sock_ready(intrace_t * intrace, int sock);
 
 #endif

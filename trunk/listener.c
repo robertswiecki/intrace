@@ -36,29 +36,26 @@
 
 #include <intrace.h>
 
-static void listener_got_tcp(intrace_t * intrace, uint8_t * pkt, uint32_t pktlen, struct sockaddr *sa)
+static void listener_tcp_sock_ready(intrace_t * intrace, int sock)
 {
 	if (intrace->isIPv6)
-		ipv6_got_tcp(intrace, (tcp6bdy_t *) pkt, pktlen, (struct sockaddr_in6 *)sa);
+		ipv6_tcp_sock_ready(intrace, sock);
 	else
-		ipv4_got_tcp(intrace, (ip4pkt_t *) pkt, pktlen, (struct sockaddr_in *)sa);
+		ipv4_tcp_sock_ready(intrace, sock);
 }
 
-static void listener_got_icmp(intrace_t * intrace, uint8_t * pkt, uint32_t pktlen, struct sockaddr *sa)
+static void listener_icmp_sock_ready(intrace_t * intrace, int sock)
 {
 	if (intrace->isIPv6)
-		ipv6_got_icmp(intrace, (icmp6bdy_t *) pkt, pktlen, (struct sockaddr_in6 *)sa);
+		ipv6_icmp_sock_ready(intrace, sock);
 	else
-		ipv4_got_icmp(intrace, (ip4pkt_t *) pkt, pktlen, (struct sockaddr_in *)sa);
+		ipv4_icmp_sock_ready(intrace, sock);
 }
 
 static void listener_process(intrace_t * intrace)
 {
-	uint8_t pkt[4096];
-	size_t pktSize;
-	fd_set fds;
-
 	for (;;) {
+		fd_set fds;
 		FD_ZERO(&fds);
 		FD_SET(intrace->listener.rcvSocketTCP, &fds);
 		FD_SET(intrace->listener.rcvSocketICMP, &fds);
@@ -68,20 +65,11 @@ static void listener_process(intrace_t * intrace)
 		if (select(maxFd + 1, &fds, NULL, NULL, NULL) < 1)
 			continue;
 
-		/* We use it either as sickaddr_in or sockaddr_in6, use safe value here */
-		char sa[4096];
-		socklen_t saLen;
-		saLen = sizeof(sa);
-		if ((pktSize =
-		     recvfrom(intrace->listener.rcvSocketTCP, pkt, sizeof(pkt), MSG_TRUNC | MSG_DONTWAIT,
-			      (struct sockaddr *)sa, &saLen)) != -1)
-			listener_got_tcp(intrace, pkt, pktSize, (struct sockaddr *)sa);
+		if (FD_ISSET(intrace->listener.rcvSocketTCP, &fds))
+			listener_tcp_sock_ready(intrace, intrace->listener.rcvSocketTCP);
 
-		saLen = sizeof(sa);
-		if ((pktSize =
-		     recvfrom(intrace->listener.rcvSocketICMP, pkt, sizeof(pkt), MSG_TRUNC | MSG_DONTWAIT,
-			      (struct sockaddr *)sa, &saLen)) != -1)
-			listener_got_icmp(intrace, pkt, pktSize, (struct sockaddr *)sa);
+		if (FD_ISSET(intrace->listener.rcvSocketICMP, &fds))
+			listener_icmp_sock_ready(intrace, intrace->listener.rcvSocketICMP);
 	}
 }
 
