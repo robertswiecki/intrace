@@ -36,132 +36,25 @@
 
 #include <intrace.h>
 
-static void listener_tcp(intrace_t * intrace, pkt_t * pkt, uint32_t pktlen)
+static void listener_got_tcp(intrace_t * intrace, uint8_t * pkt, uint32_t pktlen, struct sockaddr *sa)
 {
-	struct tcphdr *tcph =
-	    (struct tcphdr *)((uint8_t *) & pkt->iph +
-			      ((uint32_t) pkt->iph.ip_hl * 4));
-
-	while (pthread_mutex_lock(&intrace->mutex)) ;
-
-	if (intrace->port && ntohs(tcph->th_dport) != intrace->port &&
-	    ntohs(tcph->th_sport) != intrace->port) {
-/* That's insecure!! ;) */
-	} else if ((tcph->th_flags & TH_ACK) &&
-		   (((intrace->ack + intrace->paylSz) == ntohl(tcph->th_ack))
-		    || (intrace->ack + intrace->paylSz + 1) ==
-		    ntohl(tcph->th_ack))
-		   && (intrace->rip.s_addr == pkt->iph.ip_src.s_addr)
-		   && intrace->cnt && intrace->cnt < MAX_HOPS) {
-
-		int hop = intrace->cnt - 1;
-		intrace->listener.proto[hop] = IPPROTO_TCP;
-		memcpy(&intrace->listener.ip_trace[hop].s_addr,
-		       &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));
-		intrace->maxhop = hop;
-		intrace->cnt = MAX_HOPS;
-
-	} else if ((tcph->th_flags & TH_RST) && intrace->cnt &&
-		   (intrace->rip.s_addr == pkt->iph.ip_src.s_addr) &&
-		   (intrace->lip.s_addr == pkt->iph.ip_dst.s_addr) &&
-		   (intrace->lport == ntohs(tcph->th_dport)) &&
-		   (intrace->rport == ntohs(tcph->th_sport)) && intrace->cnt
-		   && intrace->cnt < MAX_HOPS) {
-
-		int hop = intrace->cnt - 1;
-		memcpy(&intrace->listener.ip_trace[hop].s_addr,
-		       &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));
-		intrace->listener.proto[hop] = -1;
-		intrace->maxhop = hop;
-		intrace->cnt = MAX_HOPS;
-
-	} else if (intrace->rip.s_addr == pkt->iph.ip_src.s_addr) {
-
-		memcpy(&intrace->lip, &pkt->iph.ip_dst,
-		       sizeof(pkt->iph.ip_dst));
-		intrace->rport = ntohs(tcph->th_sport);
-		intrace->lport = ntohs(tcph->th_dport);
-		if (ntohl(tcph->th_seq))
-			intrace->seq = ntohl(tcph->th_seq);
-		if (ntohl(tcph->th_ack))
-			intrace->ack = ntohl(tcph->th_ack);
-	}
-
-	while (pthread_mutex_unlock(&intrace->mutex)) ;
+	if (intrace->isIPv6)
+		ipv6_got_tcp(intrace, (tcp6bdy_t *) pkt, pktlen, (struct sockaddr_in6 *)sa);
+	else
+		ipv4_got_tcp(intrace, (ip4pkt_t *) pkt, pktlen, (struct sockaddr_in *)sa);
 }
 
-static inline int listener_checkIcmp(intrace_t * intrace, pkt_t * pkt,
-				     uint32_t pktlen)
+static void listener_got_icmp(intrace_t * intrace, uint8_t * pkt, uint32_t pktlen, struct sockaddr *sa)
 {
-	icmpbdy_t *pkticmp =
-	    (icmpbdy_t *) ((uint8_t *) & pkt->iph +
-			   ((uint32_t) pkt->iph.ip_hl * 4));
-
-	if (((uint8_t *) pkticmp - (uint8_t *) pkt + sizeof(struct icmphdr) +
-	     sizeof(struct ip)) > pktlen)
-		return errPkt;
-
-	/* F..n linux ;) */
-#ifdef __linux__
-	if (pkticmp->icmph.type != ICMP_TIMXCEED)
-		return errPkt;
-#else
-	if (pkticmp->icmph.icmp_type != ICMP_TIMXCEED)
-		return errPkt;
-#endif
-
-	if (pkticmp->iph.ip_src.s_addr != intrace->lip.s_addr)
-		return errPkt;
-
-	if (pkticmp->iph.ip_dst.s_addr != intrace->rip.s_addr)
-		return errPkt;
-
-	if (pkticmp->iph.ip_p != IPPROTO_TCP)
-		return errPkt;
-
-	int id = ntohs(pkticmp->iph.ip_id);
-	if (id >= MAX_HOPS)
-		return errPkt;
-
-	return id;
-}
-
-static void listener_icmp(intrace_t * intrace, pkt_t * pkt, uint32_t pktlen)
-{
-	int id;
-
-	while (pthread_mutex_lock(&intrace->mutex)) ;
-
-	if (intrace->maxhop >= MAX_HOPS) {
-		while (pthread_mutex_unlock(&intrace->mutex)) ;
-		return;
-	}
-
-	if ((id = listener_checkIcmp(intrace, pkt, pktlen)) < 0) {
-		while (pthread_mutex_unlock(&intrace->mutex)) ;
-		return;
-	}
-
-	icmpbdy_t *pkticmp =
-	    (icmpbdy_t *) ((uint8_t *) & pkt->iph +
-			   ((uint32_t) pkt->iph.ip_hl * 4));
-
-	/* Unsecure */
-	memcpy(&intrace->listener.ip_trace[id].s_addr, &pkt->iph.ip_src,
-	       sizeof(pkt->iph.ip_src));
-	memcpy(&intrace->listener.icmp_trace[id].s_addr, &pkticmp->iph.ip_dst,
-	       sizeof(pkticmp->iph.ip_dst));
-	intrace->listener.proto[id] = IPPROTO_ICMP;
-
-	if (id > intrace->maxhop)
-		intrace->maxhop = id;
-
-	while (pthread_mutex_unlock(&intrace->mutex)) ;
+	if (intrace->isIPv6)
+		ipv6_got_icmp(intrace, (icmp6bdy_t *) pkt, pktlen, (struct sockaddr_in6 *)sa);
+	else
+		ipv4_got_icmp(intrace, (ip4pkt_t *) pkt, pktlen, (struct sockaddr_in *)sa);
 }
 
 static void listener_process(intrace_t * intrace)
 {
-	pkt_t pkt;
+	uint8_t pkt[4096];
 	size_t pktSize;
 	fd_set fds;
 
@@ -169,24 +62,26 @@ static void listener_process(intrace_t * intrace)
 		FD_ZERO(&fds);
 		FD_SET(intrace->listener.rcvSocketTCP, &fds);
 		FD_SET(intrace->listener.rcvSocketICMP, &fds);
-
-		int maxFd =
-		    (intrace->listener.rcvSocketTCP >
-		     intrace->listener.rcvSocketICMP) ? intrace->
-		    listener.rcvSocketTCP : intrace->listener.rcvSocketICMP;
+		int maxFd = intrace->listener.rcvSocketTCP > intrace->listener.rcvSocketICMP ?
+		    intrace->listener.rcvSocketTCP : intrace->listener.rcvSocketICMP;
 
 		if (select(maxFd + 1, &fds, NULL, NULL, NULL) < 1)
 			continue;
 
+		/* We use it either as sickaddr_in or sockaddr_in6, use safe value here */
+		char sa[4096];
+		socklen_t saLen;
+		saLen = sizeof(sa);
 		if ((pktSize =
-		     recv(intrace->listener.rcvSocketTCP, &pkt, sizeof(pkt),
-			  MSG_TRUNC | MSG_DONTWAIT)) != -1)
-			listener_tcp(intrace, &pkt, pktSize);
+		     recvfrom(intrace->listener.rcvSocketTCP, pkt, sizeof(pkt), MSG_TRUNC | MSG_DONTWAIT,
+			      (struct sockaddr *)sa, &saLen)) != -1)
+			listener_got_tcp(intrace, pkt, pktSize, (struct sockaddr *)sa);
 
+		saLen = sizeof(sa);
 		if ((pktSize =
-		     recv(intrace->listener.rcvSocketICMP, &pkt, sizeof(pkt),
-			  MSG_TRUNC | MSG_DONTWAIT)) != -1)
-			listener_icmp(intrace, &pkt, pktSize);
+		     recvfrom(intrace->listener.rcvSocketICMP, pkt, sizeof(pkt), MSG_TRUNC | MSG_DONTWAIT,
+			      (struct sockaddr *)sa, &saLen)) != -1)
+			listener_got_icmp(intrace, pkt, pktSize, (struct sockaddr *)sa);
 	}
 }
 
@@ -194,23 +89,25 @@ int listener_init(intrace_t * intrace)
 {
 	char errbuf[512];
 
-	intrace->listener.rcvSocketTCP = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+	intrace->listener.rcvSocketTCP = socket(_IT_AF(intrace), SOCK_RAW, IPPROTO_TCP);
 	if (intrace->listener.rcvSocketTCP < 0) {
 		strerror_r(errno, errbuf, sizeof(errbuf) - 1);
-		debug_printf(dlError,
-			     "listener: Cannot open raw TCP socket, '%s'\n",
-			     errbuf);
+		debug_printf(dlError, "listener: Cannot open raw TCP socket, '%s'\n", errbuf);
 		return errSocket;
 	}
 
-	intrace->listener.rcvSocketICMP =
-	    socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-	if (intrace->listener.rcvSocketICMP < 0) {
+	intrace->listener.rcvSocketICMP = socket(_IT_AF(intrace), SOCK_RAW, _IT_ICMPPROTO(intrace));
+	if (intrace->listener.rcvSocketTCP < 0) {
 		strerror_r(errno, errbuf, sizeof(errbuf) - 1);
-		debug_printf(dlError,
-			     "listener: Cannot open raw ICMP socket, '%s'\n",
-			     errbuf);
-		close(intrace->listener.rcvSocketTCP);
+		debug_printf(dlError, "listener: Cannot open raw ICMPv6 socket, '%s'\n", errbuf);
+		return errSocket;
+	}
+
+	int on = 1;
+	if (intrace->isIPv6
+	    && setsockopt(intrace->listener.rcvSocketTCP, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on, sizeof(on)) == -1) {
+		strerror_r(errno, errbuf, sizeof(errbuf) - 1);
+		debug_printf(dlError, "listener: Cannot set IPV6_RECVPKTINFO, '%s'\n", errbuf);
 		return errSocket;
 	}
 

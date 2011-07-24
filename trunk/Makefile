@@ -26,7 +26,7 @@ LD = gcc
 LDFLAGS = -fPIC -lpthread
 
 SRCS = debug.c intrace.c threads.c listener.c \
-	   sender.c display.c
+	   sender.c display.c ipv4.c ipv6.c
 
 OBJS = $(SRCS:.c=.o)
 BIN = intrace
@@ -41,4 +41,7 @@ $(BIN): $(OBJS)
 
 clean:
 	@(echo CLEAN; rm -f core $(OBJS) $(BIN))
+
+indent:
+	@(echo INDENT; indent -linux -l120 -lc120 -ut -sob -c33 -cp33 *.c *.h; rm -f *~)
 # DO NOT DELETE

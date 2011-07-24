@@ -10,6 +10,9 @@
 
 #include <config.h>
 
+#include <sys/param.h>
+#include <sys/types.h>
+#include <stdbool.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <sys/socket.h>
@@ -25,27 +28,44 @@ typedef struct {
 
 	struct in_addr rip;
 	struct in_addr lip;
+	struct in6_addr rip6;
+	struct in6_addr lip6;
 	uint16_t rport;
 	uint16_t lport;
 	uint32_t seq;
 	uint32_t ack;
 
+	bool isIPv6;
 	int maxhop;
 	int cnt;
+	int if_index;
 
 	struct {
 		int rcvSocketTCP;
 		int rcvSocketICMP;
+
 		struct in_addr ip_trace[MAX_HOPS + 1];
 		struct in_addr icmp_trace[MAX_HOPS + 1];
+		struct in6_addr ip_trace6[MAX_HOPS + 1];
+		struct in6_addr icmp_trace6[MAX_HOPS + 1];
 		int16_t proto[MAX_HOPS + 1];
 	} listener;
 
 	struct {
 		int sndSocket;
 	} sender;
-
 } intrace_t;
+
+#define _IT_AF(i) (i->isIPv6 ? AF_INET6 : AF_INET)
+#define _IT_IPPROTO(i) (i->isIPv6 ? IPPROTO_IPV6 : IPPROTO_IP)
+#define _IT_ICMPPROTO(i) (i->isIPv6 ? IPPROTO_ICMPV6 : IPPROTO_ICMP)
+#define _IT_LIP(i) (i->isIPv6 ? (void*)i->lip6.s6_addr : (void*)&i->lip.s_addr)
+#define _IT_RIP(i) (i->isIPv6 ? (void*)i->rip6.s6_addr : (void*)&i->rip.s_addr)
+#define _IT_TRACE_IP(i, d) (i->isIPv6 ? (void*)i->listener.ip_trace6[d].s6_addr : (void*)&i->listener.ip_trace[d].s_addr)
+#define _IT_TRACE_ICMP(i, d) (i->isIPv6 ? (void*)i->listener.icmp_trace6[d].s6_addr : (void*)&i->listener.icmp_trace[d].s_addr)
+#define _IT_IPSTR(i) (i->isIPv6 ? "IPv6" : "IPv4" )
+#define _IT_IPCMP(i, f, s) (!memcmp(f, s, i->isIPv6 ? 16 : 4))
+#define _IT_ISANY(i, a) (!memcmp(a, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", i->isIPv6 ? 16 : 4))
 
 #include <errors.h>
 #include <debug.h>
@@ -53,5 +73,7 @@ typedef struct {
 #include <sender.h>
 #include <listener.h>
 #include <display.h>
+#include <ipv4.h>
+#include <ipv6.h>
 
 #endif

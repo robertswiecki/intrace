@@ -37,18 +37,18 @@ extern char *optarg;
 
 int main(int argc, char **argv)
 {
-	char c;
+	int c;
 	int dl = dlInfo, err;
 	intrace_t intrace;
 
 	bzero(&intrace, sizeof(intrace_t));
 	intrace.paylSz = 1;
+	intrace.isIPv6 = false;
 
-	printf(INTRACE_NAME ", version " INTRACE_VERSION " " INTRACE_AUTHORS
-	       "\n");
+	printf(INTRACE_NAME ", version " INTRACE_VERSION " " INTRACE_AUTHORS "\n");
 
 	for (;;) {
-		c = getopt(argc, argv, "h:p:d:s:");
+		c = getopt(argc, argv, "h:p:d:s:6");
 		if (c < 0)
 			break;
 
@@ -65,6 +65,9 @@ int main(int argc, char **argv)
 		case 's':
 			intrace.paylSz = atoi(optarg);
 			break;
+		case '6':
+			intrace.isIPv6 = true;
+			break;
 		default:
 			break;
 		}
@@ -77,8 +80,7 @@ int main(int argc, char **argv)
 	}
 
 	if (!intrace.hostname) {
-		debug_printf(dlInfo,
-			     "Usage: %s <-h hostname> [-p <port>] [-d <debuglevel>] [-s <payloadsize>]\n",
+		debug_printf(dlInfo, "Usage: %s <-h hostname> [-p <port>] [-d <debuglevel>] [-s <payloadsize>] [-6]\n",
 			     argv[0]);
 		return errArg;
 	}
