@@ -298,7 +298,6 @@ void ipv6_got_icmp(intrace_t * intrace, icmp6bdy_t * pkt, uint32_t pktlen, struc
 		return;
 	}
 
-	/* Unsecure */
 	memcpy(intrace->listener.ip_trace6[id].s6_addr, sa->sin6_addr.s6_addr, sizeof(sa->sin6_addr.s6_addr));
 	memcpy(intrace->listener.icmp_trace6[id].s6_addr, pkt->iph.ip6_dst.s6_addr, sizeof(pkt->iph.ip6_dst.s6_addr));
 	intrace->listener.proto[id] = IPPROTO_ICMPV6;
