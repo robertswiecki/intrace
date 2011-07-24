@@ -10,8 +10,8 @@
 #define _CONFIG_H_
 
 #define INTRACE_NAME "InTrace"
-#define INTRACE_VERSION "2.0"
-#define INTRACE_AUTHORS "(C)2007-2009 Robert Swiecki <robert@swiecki.net>"
+#define INTRACE_VERSION "1.5"
+#define INTRACE_AUTHORS "(C)2007-2011 Robert Swiecki <robert@swiecki.net>"
 
 /* struct tcphdr incompabilities */
 #ifndef _BSD_SOURCE
