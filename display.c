@@ -110,7 +110,10 @@ int display_process(intrace_t * intrace)
 			printf("Status: Packets sent #%-50d", intrace->cnt - 1);
 
 		printf("\n\n");
-		printf("%3s  %-17s  %-17s  %s\n", "#", "[src addr]", "[icmp src addr]", "[pkt type]");
+		if (intrace->isIPv6)
+			printf("%3s  %-41s  %-41s  %s\n", "#", "[src addr]", "[icmp src addr]", "[pkt type]");
+		else
+			printf("%3s  %-17s  %-17s  %s\n", "#", "[src addr]", "[icmp src addr]", "[pkt type]");
 
 		for (int i = 1; i <= intrace->maxhop; i++) {
 

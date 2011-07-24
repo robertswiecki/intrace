@@ -184,10 +184,22 @@ static bool ipv6_extract_srcdst(intrace_t * intrace, struct msghdr *msg, struct 
 	return false;
 }
 
+static inline int ipv6_checkTcp(intrace_t * intrace, struct tcphdr * pkt, uint32_t pktlen)
+{
+	if (pktlen < sizeof(struct tcphdr))
+		return errPkt;
+
+	return errNone;
+}
+
 void ipv6_tcp_sock_ready(intrace_t * intrace, struct msghdr *msg)
 {
 	struct in6_addr src, dst;
 	struct tcphdr *tcph = (struct tcphdr *)msg->msg_iov->iov_base;
+	uint32_t pktlen = msg->msg_iov->iov_len;
+
+	if (ipv6_checkTcp(intrace, tcph, pktlen) < 0)
+		return;
 
 	if (!ipv6_extract_srcdst(intrace, msg, &src, &dst)) {
 		debug_printf(dlError, "Cannot get IPv6 TCP packet's src/dst IP addresses\n");
@@ -241,7 +253,7 @@ static inline int ipv6_checkIcmp(intrace_t * intrace, icmp6bdy_t * pkt, uint32_t
 {
 	icmp6bdy_t *pkticmp = pkt;
 
-	if (sizeof(struct icmp6_hdr) + sizeof(struct ip6_hdr) > pktlen)
+	if (pktlen < (sizeof(struct icmp6_hdr) + sizeof(struct ip6_hdr)))
 		return errPkt;
 
 	if (pkticmp->icmph.icmp6_type != ICMP6_TIME_EXCEEDED)
@@ -271,15 +283,13 @@ void ipv6_icmp_sock_ready(intrace_t * intrace, struct msghdr *msg)
 		return;
 	}
 
+	int id;
+	if ((id = ipv6_checkIcmp(intrace, pkt, pktlen)) < 0)
+		return;
+
 	while (pthread_mutex_lock(&intrace->mutex)) ;
 
 	if (intrace->maxhop >= MAX_HOPS) {
-		while (pthread_mutex_unlock(&intrace->mutex)) ;
-		return;
-	}
-
-	int id;
-	if ((id = ipv6_checkIcmp(intrace, pkt, pktlen)) < 0) {
 		while (pthread_mutex_unlock(&intrace->mutex)) ;
 		return;
 	}
