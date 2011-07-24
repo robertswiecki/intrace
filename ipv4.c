@@ -262,7 +262,6 @@ void ipv4_got_icmp(intrace_t * intrace, ip4pkt_t * pkt, uint32_t pktlen, struct 
 
 	icmp4bdy_t *pkticmp = (icmp4bdy_t *) ((uint8_t *) & pkt->iph + ((uint32_t) pkt->iph.ip_hl * 4));
 
-	/* Unsecure */
 	memcpy(&intrace->listener.ip_trace[id].s_addr, &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));
 	memcpy(&intrace->listener.icmp_trace[id].s_addr, &pkticmp->iph.ip_dst, sizeof(pkticmp->iph.ip_dst));
 	intrace->listener.proto[id] = IPPROTO_ICMP;
