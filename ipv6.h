@@ -32,7 +32,7 @@ struct icmp6bdy {
 typedef struct icmp6bdy icmp6bdy_t;
 
 extern void ipv6_sendpkt(intrace_t * intrace, int seqSkew, int ackSkew);
-extern void ipv6_tcp_sock_ready(intrace_t * intrace, int sock);
-extern void ipv6_icmp_sock_ready(intrace_t * intrace, int sock);
+extern void ipv6_tcp_sock_ready(intrace_t * intrace, struct msghdr *msg);
+extern void ipv6_icmp_sock_ready(intrace_t * intrace, struct msghdr *msg);
 
 #endif

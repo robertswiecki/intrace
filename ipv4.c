@@ -168,45 +168,42 @@ void ipv4_sendpkt(intrace_t * intrace, int seqSkew, int ackSkew)
 	       sizeof(struct sockaddr));
 }
 
-void ipv4_tcp_sock_ready(intrace_t * intrace, int sock)
+void ipv4_tcp_sock_ready(intrace_t * intrace, struct msghdr *msg)
 {
-	ip4pkt_t pkt;
-	uint32_t pktlen;
-	if ((pktlen = recv(sock, &pkt, sizeof(pkt), MSG_TRUNC | MSG_DONTWAIT)) == -1)
-		return;
+	ip4pkt_t *pkt = msg->msg_iov->iov_base;
 
-	struct tcphdr *tcph = (struct tcphdr *)((uint8_t *) & pkt.iph + ((uint32_t) pkt.iph.ip_hl * 4));
+	struct tcphdr *tcph = (struct tcphdr *)((uint8_t *) & pkt->iph + ((uint32_t) pkt->iph.ip_hl * 4));
 
 	while (pthread_mutex_lock(&intrace->mutex)) ;
 
 	if (intrace->port && ntohs(tcph->th_dport) != intrace->port && ntohs(tcph->th_sport) != intrace->port) {
-/* That's insecure!! ;) */
+/* UNSAFE_ Fix length check */
 	} else if ((tcph->th_flags & TH_ACK) && (((intrace->ack + intrace->paylSz) == ntohl(tcph->th_ack))
 						 || (intrace->ack + intrace->paylSz + 1) == ntohl(tcph->th_ack))
-		   && (intrace->rip.s_addr == pkt.iph.ip_src.s_addr)
+		   && (intrace->rip.s_addr == pkt->iph.ip_src.s_addr)
 		   && intrace->cnt && intrace->cnt < MAX_HOPS) {
 
 		int hop = intrace->cnt - 1;
 		intrace->listener.proto[hop] = IPPROTO_TCP;
-		memcpy(&intrace->listener.ip_trace[hop].s_addr, &pkt.iph.ip_src, sizeof(pkt.iph.ip_src));
+		memcpy(&intrace->listener.ip_trace[hop].s_addr, &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));
 		intrace->maxhop = hop;
 		intrace->cnt = MAX_HOPS;
 
 	} else if ((tcph->th_flags & TH_RST) && intrace->cnt &&
-		   (intrace->rip.s_addr == pkt.iph.ip_src.s_addr) &&
-		   (intrace->lip.s_addr == pkt.iph.ip_dst.s_addr) &&
+		   (intrace->rip.s_addr == pkt->iph.ip_src.s_addr) &&
+		   (intrace->lip.s_addr == pkt->iph.ip_dst.s_addr) &&
 		   (intrace->lport == ntohs(tcph->th_dport)) &&
 		   (intrace->rport == ntohs(tcph->th_sport)) && intrace->cnt && intrace->cnt < MAX_HOPS) {
 
 		int hop = intrace->cnt - 1;
-		memcpy(&intrace->listener.ip_trace[hop].s_addr, &pkt.iph.ip_src, sizeof(pkt.iph.ip_src));
+		memcpy(&intrace->listener.ip_trace[hop].s_addr, &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));
 		intrace->listener.proto[hop] = -1;
 		intrace->maxhop = hop;
 		intrace->cnt = MAX_HOPS;
 
-	} else if (intrace->rip.s_addr == pkt.iph.ip_src.s_addr) {
+	} else if (intrace->rip.s_addr == pkt->iph.ip_src.s_addr) {
 
-		memcpy(&intrace->lip, &pkt.iph.ip_dst, sizeof(pkt.iph.ip_dst));
+		memcpy(&intrace->lip, &pkt->iph.ip_dst, sizeof(pkt->iph.ip_dst));
 		intrace->rport = ntohs(tcph->th_sport);
 		intrace->lport = ntohs(tcph->th_dport);
 		if (ntohl(tcph->th_seq))
@@ -249,12 +246,10 @@ static inline int ipv4_checkIcmp(intrace_t * intrace, ip4pkt_t * pkt, uint32_t p
 	return id;
 }
 
-void ipv4_icmp_sock_ready(intrace_t * intrace, int sock)
+void ipv4_icmp_sock_ready(intrace_t * intrace, struct msghdr *msg)
 {
-	ip4pkt_t pkt;
-	uint32_t pktlen;
-	if ((pktlen = recv(sock, &pkt, sizeof(pkt), MSG_TRUNC | MSG_DONTWAIT)) == -1)
-		return;
+	ip4pkt_t *pkt = msg->msg_iov->iov_base;
+	uint32_t pktlen = msg->msg_iov->iov_len;
 
 	while (pthread_mutex_lock(&intrace->mutex)) ;
 
@@ -264,14 +259,14 @@ void ipv4_icmp_sock_ready(intrace_t * intrace, int sock)
 	}
 
 	int id;
-	if ((id = ipv4_checkIcmp(intrace, &pkt, pktlen)) < 0) {
+	if ((id = ipv4_checkIcmp(intrace, pkt, pktlen)) < 0) {
 		while (pthread_mutex_unlock(&intrace->mutex)) ;
 		return;
 	}
 
-	icmp4bdy_t *pkticmp = (icmp4bdy_t *) ((uint8_t *) & pkt.iph + ((uint32_t) pkt.iph.ip_hl * 4));
+	icmp4bdy_t *pkticmp = (icmp4bdy_t *) ((uint8_t *) & pkt->iph + ((uint32_t) pkt->iph.ip_hl * 4));
 
-	memcpy(&intrace->listener.ip_trace[id].s_addr, &pkt.iph.ip_src, sizeof(pkt.iph.ip_src));
+	memcpy(&intrace->listener.ip_trace[id].s_addr, &pkt->iph.ip_src, sizeof(pkt->iph.ip_src));
 	memcpy(&intrace->listener.icmp_trace[id].s_addr, &pkticmp->iph.ip_dst, sizeof(pkticmp->iph.ip_dst));
 	intrace->listener.proto[id] = IPPROTO_ICMP;
 
