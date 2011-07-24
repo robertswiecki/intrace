@@ -166,13 +166,13 @@ void ipv6_sendpkt(intrace_t * intrace, int seqSkew, int ackSkew)
 	sendmsg(intrace->sender.sndSocket, &msgh, MSG_NOSIGNAL);
 }
 
-static bool ipv6_dst_ip(intrace_t * intrace, int sockFd, struct in6_addr *dstIp)
+static uint32_t ipv6_get_tcp_packet(intrace_t * intrace, int sock, uint8_t * buf, uint32_t buflen, struct in6_addr *src,
+				    struct in6_addr *dst)
 {
 	struct iovec iov;
 
-	char iovbuf[4096];
-	iov.iov_len = sizeof(iovbuf);
-	iov.iov_base = iovbuf;
+	iov.iov_len = buflen;
+	iov.iov_base = buf;
 
 	char addrbuf[4096];
 	char ansbuf[4096];
@@ -186,35 +186,37 @@ static bool ipv6_dst_ip(intrace_t * intrace, int sockFd, struct in6_addr *dstIp)
 	msg.msg_controllen = sizeof(ansbuf);
 	msg.msg_flags = 0;
 
-	if (recvmsg(sockFd, &msg, MSG_WAITALL) == -1) {
-		return false;
+	if (recvmsg(sock, &msg, MSG_WAITALL) == -1) {
+		return 0;
 	}
+
+	struct sockaddr_in6 *sa = (struct sockaddr_in6 *)msg.msg_name;
+	memcpy(src->s6_addr, sa->sin6_addr.s6_addr, sizeof(src->s6_addr));
 
 	struct cmsghdr *cmsg;
 	for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 		if ((cmsg->cmsg_level == IPPROTO_IPV6) && (cmsg->cmsg_type == IPV6_PKTINFO)) {
 			struct in6_pktinfo *pktInfo = (struct in6_pktinfo *)CMSG_DATA(cmsg);
-			memcpy(dstIp->s6_addr, pktInfo->ipi6_addr.s6_addr, sizeof(dstIp->s6_addr));
+			memcpy(dst->s6_addr, pktInfo->ipi6_addr.s6_addr, sizeof(dst->s6_addr));
 			intrace->if_index = pktInfo->ipi6_ifindex;
-			return true;
+			return msg.msg_controllen;
 		}
 	}
 
-	return false;
+	return 0;
 }
 
-void ipv6_got_tcp(intrace_t * intrace, tcp6bdy_t * pkt, uint32_t pktlen, struct sockaddr_in6 *sa)
+void ipv6_tcp_sock_ready(intrace_t * intrace, int sock)
 {
-	assert(sa->sin6_family == AF_INET6);
-	struct tcphdr *tcph = &pkt->tcph;
+	struct in6_addr src, dst;
+	uint8_t buf[4096];
+	uint32_t pktlen;
 
-	struct in6_addr srcIp;
-	memcpy(srcIp.s6_addr, sa->sin6_addr.s6_addr, sizeof(srcIp.s6_addr));
-	struct in6_addr dstIp;
-	if (!ipv6_dst_ip(intrace, intrace->listener.rcvSocketTCP, &dstIp)) {
-		debug_printf(dlError, "Cannot get dst IPv6 address\n");
+	if ((pktlen = ipv6_get_tcp_packet(intrace, sock, buf, sizeof(buf), &src, &dst)) == 0) {
+		debug_printf(dlError, "Cannot get IPv6 TCP packet\n");
 		return;
 	}
+	struct tcphdr *tcph = (struct tcphdr *)buf;
 
 	while (pthread_mutex_lock(&intrace->mutex)) ;
 
@@ -222,33 +224,33 @@ void ipv6_got_tcp(intrace_t * intrace, tcp6bdy_t * pkt, uint32_t pktlen, struct 
 /* That's insecure!! ;) */
 	} else if ((tcph->th_flags & TH_ACK) && (((intrace->ack + intrace->paylSz) == ntohl(tcph->th_ack))
 						 || (intrace->ack + intrace->paylSz + 1) == ntohl(tcph->th_ack))
-		   && _IT_IPCMP(intrace, intrace->rip6.s6_addr, srcIp.s6_addr)
+		   && _IT_IPCMP(intrace, intrace->rip6.s6_addr, src.s6_addr)
 		   && intrace->cnt && intrace->cnt < MAX_HOPS) {
 
 		int hop = intrace->cnt - 1;
 		intrace->listener.proto[hop] = IPPROTO_TCP;
 		memcpy(intrace->listener.ip_trace6[hop].s6_addr,
-		       srcIp.s6_addr, sizeof(intrace->listener.ip_trace6[hop].s6_addr));
+		       src.s6_addr, sizeof(intrace->listener.ip_trace6[hop].s6_addr));
 		intrace->maxhop = hop;
 		intrace->cnt = MAX_HOPS;
 
 	} else if ((tcph->th_flags & TH_RST) && intrace->cnt &&
-		   _IT_IPCMP(intrace, intrace->rip6.s6_addr, srcIp.s6_addr) &&
-		   _IT_IPCMP(intrace, intrace->lip6.s6_addr, dstIp.s6_addr) &&
+		   _IT_IPCMP(intrace, intrace->rip6.s6_addr, src.s6_addr) &&
+		   _IT_IPCMP(intrace, intrace->lip6.s6_addr, dst.s6_addr) &&
 		   (intrace->lport == ntohs(tcph->th_dport)) &&
 		   (intrace->rport == ntohs(tcph->th_sport)) && intrace->cnt && intrace->cnt < MAX_HOPS) {
 
 		int hop = intrace->cnt - 1;
 
-		memcpy(intrace->listener.ip_trace6[hop].s6_addr, srcIp.s6_addr, sizeof(srcIp.s6_addr));
+		memcpy(intrace->listener.ip_trace6[hop].s6_addr, src.s6_addr, sizeof(src.s6_addr));
 
 		intrace->listener.proto[hop] = -1;
 		intrace->maxhop = hop;
 		intrace->cnt = MAX_HOPS;
 
-	} else if (_IT_IPCMP(intrace, intrace->rip6.s6_addr, srcIp.s6_addr)) {
+	} else if (_IT_IPCMP(intrace, intrace->rip6.s6_addr, src.s6_addr)) {
 
-		memcpy(intrace->lip6.s6_addr, dstIp.s6_addr, sizeof(intrace->lip6.s6_addr));
+		memcpy(intrace->lip6.s6_addr, dst.s6_addr, sizeof(intrace->lip6.s6_addr));
 		intrace->rport = ntohs(tcph->th_sport);
 		intrace->lport = ntohs(tcph->th_dport);
 		if (ntohl(tcph->th_seq))
@@ -282,9 +284,16 @@ static inline int ipv6_checkIcmp(intrace_t * intrace, icmp6bdy_t * pkt, uint32_t
 	return id;
 }
 
-void ipv6_got_icmp(intrace_t * intrace, icmp6bdy_t * pkt, uint32_t pktlen, struct sockaddr_in6 *sa)
+void ipv6_icmp_sock_ready(intrace_t * intrace, int sock)
 {
-	int id;
+	icmp6bdy_t pkt;
+	uint32_t pktlen;
+	struct sockaddr_in6 sa;
+	socklen_t saSz = sizeof(sa);
+	if ((pktlen = recvfrom(sock, &pkt, sizeof(pkt), MSG_TRUNC | MSG_DONTWAIT, (struct sockaddr *)&sa, &saSz)) == -1)
+		return;
+
+	assert(sa.sin6_family == AF_INET6);
 
 	while (pthread_mutex_lock(&intrace->mutex)) ;
 
@@ -293,13 +302,14 @@ void ipv6_got_icmp(intrace_t * intrace, icmp6bdy_t * pkt, uint32_t pktlen, struc
 		return;
 	}
 
-	if ((id = ipv6_checkIcmp(intrace, pkt, pktlen)) < 0) {
+	int id;
+	if ((id = ipv6_checkIcmp(intrace, &pkt, pktlen)) < 0) {
 		while (pthread_mutex_unlock(&intrace->mutex)) ;
 		return;
 	}
 
-	memcpy(intrace->listener.ip_trace6[id].s6_addr, sa->sin6_addr.s6_addr, sizeof(sa->sin6_addr.s6_addr));
-	memcpy(intrace->listener.icmp_trace6[id].s6_addr, pkt->iph.ip6_dst.s6_addr, sizeof(pkt->iph.ip6_dst.s6_addr));
+	memcpy(intrace->listener.ip_trace6[id].s6_addr, sa.sin6_addr.s6_addr, sizeof(sa.sin6_addr.s6_addr));
+	memcpy(intrace->listener.icmp_trace6[id].s6_addr, pkt.iph.ip6_dst.s6_addr, sizeof(pkt.iph.ip6_dst.s6_addr));
 	intrace->listener.proto[id] = IPPROTO_ICMPV6;
 
 	if (id > intrace->maxhop)
