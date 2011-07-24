@@ -88,32 +88,29 @@ int display_process(intrace_t * intrace)
 		/* Lock mutex */
 		while (pthread_mutex_lock(&intrace->mutex)) ;
 
-		char locAddr[32], rmtAddr[32];
-		strcpy(locAddr, inet_ntoa(intrace->lip));
-		strcpy(rmtAddr, inet_ntoa(intrace->rip));
+		char locAddr[INET6_ADDRSTRLEN], rmtAddr[INET6_ADDRSTRLEN];
+		inet_ntop(_IT_AF(intrace), _IT_LIP(intrace), locAddr, sizeof(locAddr));
+		inet_ntop(_IT_AF(intrace), _IT_RIP(intrace), rmtAddr, sizeof(rmtAddr));
 
 		printf("%s %s -- R: %s/%d (%d) L: %s/%d\n", INTRACE_NAME,
-		       INTRACE_VERSION, rmtAddr, intrace->rport,
-		       intrace->port ? intrace->port : 0, locAddr,
+		       INTRACE_VERSION, rmtAddr, intrace->rport, intrace->port ? intrace->port : 0, locAddr,
 		       intrace->lport);
 
-		printf("Payload Size: %u bytes, Seq: 0x%08x, Ack: 0x%08x\n",
-		       intrace->paylSz, intrace->seq, intrace->ack);
+		printf("Payload Size: %u bytes, Seq: 0x%08x, Ack: 0x%08x\n", intrace->paylSz, intrace->seq,
+		       intrace->ack);
 
 		if (intrace->cnt >= MAX_HOPS)
 			intrace->cnt = 0;
 
 		if (!intrace->seq)
-			printf("%-75s",
-			       "Status: Sniffing for connection packets");
+			printf("%-75s", "Status: Sniffing for connection packets");
 		else if (!intrace->cnt)
 			printf("%-75s", "Status: Press ENTER");
 		else
 			printf("Status: Packets sent #%-50d", intrace->cnt - 1);
 
 		printf("\n\n");
-		printf("%3s  %-17s  %-17s  %s\n", "#", "[src addr]",
-		       "[icmp src addr]", "[pkt type]");
+		printf("%3s  %-17s  %-17s  %s\n", "#", "[src addr]", "[icmp src addr]", "[pkt type]");
 
 		for (int i = 1; i <= intrace->maxhop; i++) {
 
@@ -121,10 +118,10 @@ int display_process(intrace_t * intrace)
 
 			if (intrace->listener.proto[i] == IPPROTO_TCP)
 				pktType = "TCP";
-			else if (intrace->listener.proto[i] == IPPROTO_ICMP) {
+			else if (intrace->listener.proto[i] == IPPROTO_ICMP
+				 || intrace->listener.proto[i] == IPPROTO_ICMPV6) {
 
-				if (intrace->listener.ip_trace[i].s_addr !=
-				    intrace->rip.s_addr)
+				if (!_IT_IPCMP(intrace, _IT_TRACE_IP(intrace, i), _IT_RIP(intrace)))
 					pktType = "ICMP_TIMXCEED";
 				else
 					pktType = "ICMP_TIMXCEED NAT";
@@ -132,32 +129,31 @@ int display_process(intrace_t * intrace)
 			} else if (intrace->listener.proto[i] == -1)
 				pktType = "TCP_RST";
 
-			char ipPktAddr[] = "      ***      ";
-			if (intrace->listener.ip_trace[i].s_addr)
-				strncpy(ipPktAddr,
-					inet_ntoa(intrace->
-						  listener.ip_trace[i]),
-					strlen(ipPktAddr));
+			char ipPktAddr[] = "  ---                                  ";
+			if (!_IT_ISANY(intrace, _IT_TRACE_IP(intrace, i))) {
+				inet_ntop(_IT_AF(intrace), _IT_TRACE_IP(intrace, i), ipPktAddr, strlen(ipPktAddr));
+			}
 
-			char icmpPktAddr[] = "      ***      ";
-			if (intrace->listener.icmp_trace[i].s_addr)
-				strncpy(icmpPktAddr,
-					inet_ntoa(intrace->
-						  listener.icmp_trace[i]),
-					strlen(icmpPktAddr));
+			char icmpPktAddr[] = "  ---                                  ";
+			if (!_IT_ISANY(intrace, _IT_TRACE_ICMP(intrace, i))) {
+				inet_ntop(_IT_AF(intrace), _IT_TRACE_ICMP(intrace, i), icmpPktAddr,
+					  strlen(icmpPktAddr));
+			}
 
-			printf("%2d.  [%-15s]  [%-15s]  [%s]\n", i, ipPktAddr,
-			       icmpPktAddr, pktType);
+			if (intrace->isIPv6)
+				printf("%2d.  [%-39s]  [%-39s]  [%s]\n", i, ipPktAddr, icmpPktAddr, pktType);
+			else
+				printf("%2d.  [%-15.15s]  [%-15.15s]  [%s]\n", i, ipPktAddr, icmpPktAddr, pktType);
 		}
 
 		if (display_selectInput() > 0) {
 			if (!intrace->cnt && intrace->seq) {
 				intrace->cnt = 1;
 				intrace->maxhop = 0;
-				bzero(intrace->listener.ip_trace,
-				      sizeof(intrace->listener.ip_trace));
-				bzero(intrace->listener.icmp_trace,
-				      sizeof(intrace->listener.icmp_trace));
+				bzero(intrace->listener.ip_trace, sizeof(intrace->listener.ip_trace));
+				bzero(intrace->listener.ip_trace6, sizeof(intrace->listener.ip_trace6));
+				bzero(intrace->listener.icmp_trace, sizeof(intrace->listener.icmp_trace));
+				bzero(intrace->listener.icmp_trace6, sizeof(intrace->listener.icmp_trace6));
 				display_clr();
 			}
 		}

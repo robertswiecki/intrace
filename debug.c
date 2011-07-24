@@ -41,8 +41,7 @@ struct {
 } debug;
 
 /* Function prints debug string on given debug level */
-int _debug_printf(debug_level_t dl, const char *file, const char *func,
-		  int line, const char *fmt, ...)
+int _debug_printf(debug_level_t dl, const char *file, const char *func, int line, const char *fmt, ...)
 {
 	struct tm tm;
 	char buf[4096], *p;
@@ -77,18 +76,14 @@ int _debug_printf(debug_level_t dl, const char *file, const char *func,
 			snprintf(buf, sizeof(buf),
 				 "%d/%02d/%02d %02d:%02d:%02d.%d %s (%s:%s %d) ",
 				 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-				 tm.tm_hour, tm.tm_min, tm.tm_sec,
-				 (int)tv.tv_usec, dls[dl].name, file, func,
-				 line);
+				 tm.tm_hour, tm.tm_min, tm.tm_sec, (int)tv.tv_usec, dls[dl].name, file, func, line);
 		else
 			snprintf(buf, sizeof(buf),
 				 "%d/%02d/%02d %02d:%02d:%02d.%d %s ",
 				 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-				 tm.tm_hour, tm.tm_min, tm.tm_sec,
-				 (int)tv.tv_usec, dls[dl].name);
+				 tm.tm_hour, tm.tm_min, tm.tm_sec, (int)tv.tv_usec, dls[dl].name);
 
-		vsnprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), fmt,
-			  args);
+		vsnprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), fmt, args);
 		for (p = buf; *p; p++) {
 			if (!isascii(*p))
 				*p = '_';
