@@ -184,7 +184,7 @@ static bool ipv6_extract_srcdst(intrace_t * intrace, struct msghdr *msg, struct 
 	return false;
 }
 
-static inline int ipv6_checkTcp(intrace_t * intrace, struct tcphdr * pkt, uint32_t pktlen)
+static inline int ipv6_checkTcp(intrace_t * intrace, struct tcphdr *pkt, uint32_t pktlen)
 {
 	if (pktlen < sizeof(struct tcphdr))
 		return errPkt;
