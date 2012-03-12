@@ -19,6 +19,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+enum fMode {
+	ANY = 0,
+	IPV4 = 1,
+	IPV6 = 2
+};
+
 typedef struct {
 	pthread_mutex_t mutex;
 
@@ -35,6 +41,7 @@ typedef struct {
 	uint32_t seq;
 	uint32_t ack;
 
+	enum fMode familyMode;
 	bool isIPv6;
 	int maxhop;
 	int cnt;

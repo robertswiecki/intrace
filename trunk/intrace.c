@@ -43,12 +43,12 @@ int main(int argc, char **argv)
 
 	bzero(&intrace, sizeof(intrace_t));
 	intrace.paylSz = 1;
-	intrace.isIPv6 = false;
+	intrace.familyMode = ANY;
 
 	printf(INTRACE_NAME ", version " INTRACE_VERSION " " INTRACE_AUTHORS "\n");
 
 	for (;;) {
-		c = getopt(argc, argv, "h:p:d:s:6");
+		c = getopt(argc, argv, "h:p:d:s:46");
 		if (c < 0)
 			break;
 
@@ -65,8 +65,11 @@ int main(int argc, char **argv)
 		case 's':
 			intrace.paylSz = atoi(optarg);
 			break;
+		case '4':
+			intrace.familyMode = IPV4;
+			break;
 		case '6':
-			intrace.isIPv6 = true;
+			intrace.familyMode = IPV6;
 			break;
 		default:
 			break;
@@ -80,7 +83,8 @@ int main(int argc, char **argv)
 	}
 
 	if (!intrace.hostname) {
-		debug_printf(dlInfo, "Usage: %s <-h hostname> [-p <port>] [-d <debuglevel>] [-s <payloadsize>] [-6]\n",
+		debug_printf(dlInfo,
+			     "Usage: %s <-h hostname> [-p <port>] [-d <debuglevel>] [-s <payloadsize>] [-4] [-6]\n",
 			     argv[0]);
 		return errArg;
 	}

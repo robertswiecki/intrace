@@ -82,32 +82,25 @@ bool threads_resolveIP(intrace_t * intrace, const char *hostname)
 	char workspace[4096];
 	int err;
 
-	gethostbyname2_r(hostname, _IT_AF(intrace), &he, workspace, sizeof(workspace), &hep, &err);
-
-	if (hep == NULL) {
-		debug_printf(dlError,
-			     "threads: Cannot resolve IP addr for '%s': '%s' (%d).\n",
-			     intrace->hostname, thread_err2asc(h_errno), err);
-		return false;
+	if (intrace->familyMode == ANY || intrace->familyMode == IPV6) {
+		gethostbyname2_r(hostname, AF_INET6, &he, workspace, sizeof(workspace), &hep, &err);
+		if (hep != NULL) {
+			memcpy(intrace->rip6.s6_addr, hep->h_addr, hep->h_length);
+			intrace->isIPv6 = true;
+			return true;
+		}
+	}
+	if (intrace->familyMode == ANY || intrace->familyMode == IPV4) {
+		gethostbyname2_r(hostname, AF_INET, &he, workspace, sizeof(workspace), &hep, &err);
+		if (hep != NULL) {
+			memcpy(&intrace->rip.s_addr, hep->h_addr, hep->h_length);
+			intrace->isIPv6 = false;
+			return true;
+		}
 	}
 
-	if (intrace->isIPv6) {
-		if (hep->h_length != sizeof(intrace->rip6.s6_addr)) {
-			debug_printf(dlError, "IPv6 addr size '%d', instead of '%d\n", hep->h_length,
-				     sizeof(intrace->rip6.s6_addr));
-			return false;
-		}
-		memcpy(intrace->rip6.s6_addr, hep->h_addr, hep->h_length);
-	} else {
-		if (hep->h_length != sizeof(intrace->rip.s_addr)) {
-			debug_printf(dlError, "IPv4 addr size '%d', instead of '%d\n", hep->h_length,
-				     sizeof(intrace->rip.s_addr));
-			return false;
-		}
-		memcpy(&intrace->rip.s_addr, hep->h_addr, hep->h_length);
-	}
-
-	return true;
+	debug_printf(dlError, "Couldn't resolve '%s': '%s'\n", intrace->hostname, thread_err2asc(h_errno));
+	return false;
 }
 
 int threads_process(intrace_t * intrace)
@@ -121,9 +114,9 @@ int threads_process(intrace_t * intrace)
 		return errMutex;
 	}
 
-	debug_printf(dlDebug, "Resolving %s '%s'\n", _IT_IPSTR(intrace), intrace->hostname);
+	debug_printf(dlDebug, "Resolving '%s'\n", intrace->hostname);
 	if (!threads_resolveIP(intrace, intrace->hostname)) {
-		debug_printf(dlFatal, "Resolving %s address for '%s' failed\n", _IT_IPSTR(intrace), intrace->hostname);
+		debug_printf(dlFatal, "Resolving '%s' failed\n", intrace->hostname);
 		return errResolve;
 	}
 
@@ -133,7 +126,7 @@ int threads_process(intrace_t * intrace)
 		return errResolve;
 	}
 
-	debug_printf(dlDebug, "IP for '%s' resolved='%s'\n", intrace->hostname, haddr);
+	debug_printf(dlDebug, "%s for '%s' resolved='%s'\n", _IT_IPSTR(intrace), intrace->hostname, haddr);
 
 	if ((err = listener_init(intrace)) != errNone) {
 		debug_printf(dlFatal, "threads: Listener initialization failed, err=%d'\n", err);
