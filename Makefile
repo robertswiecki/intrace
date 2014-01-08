@@ -15,11 +15,10 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
 
-
 CC = gcc
 CFLAGS = -fPIC -O3 -g -ggdb -c -std=gnu99 -I. -pedantic \
 		 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
-		 -Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized -Wcast-align \
+		 -Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
 		 -Wreturn-type -Wpointer-arith -Wbad-function-cast
 
 LD = gcc
