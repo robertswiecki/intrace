@@ -19,7 +19,7 @@ CC = gcc
 CFLAGS = -fPIC -O3 -g -ggdb -c -std=gnu99 -I. -pedantic \
 		 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
 		 -Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
-		 -Wreturn-type -Wpointer-arith -Wbad-function-cast
+		 -Wreturn-type -Wpointer-arith -Wbad-function-cast -Wno-cast-align
 
 LD = gcc
 LDFLAGS = -fPIC -lpthread
@@ -42,5 +42,5 @@ clean:
 	@(echo CLEAN; rm -f core $(OBJS) $(BIN))
 
 indent:
-	@(echo INDENT; indent -linux -l120 -lc120 -ut -sob -c33 -cp33 *.c *.h; rm -f *~)
+	@(echo INDENT; indent -linux -l100 -lc100 -sob -c33 -cp33 *.c *.h; rm -f *~)
 # DO NOT DELETE

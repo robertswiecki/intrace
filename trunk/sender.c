@@ -83,7 +83,8 @@ int sender_init(intrace_t * intrace)
 	}
 
 	if (!intrace->isIPv6 && setsockopt
-	    (intrace->sender.sndSocket, _IT_IPPROTO(intrace), IP_HDRINCL, (char *)&tmp, sizeof(tmp))) {
+	    (intrace->sender.sndSocket, _IT_IPPROTO(intrace), IP_HDRINCL, (char *)&tmp,
+	     sizeof(tmp))) {
 		debug_printf(dlError, "sender: Cannot setsockopt on socket\n");
 		close(intrace->sender.sndSocket);
 		return errSocket;

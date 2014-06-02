@@ -14,7 +14,8 @@ typedef enum {
 } debug_level_t;
 
 /* Function prints debug string on given debug level */
-extern int _debug_printf(debug_level_t dl, const char *file, const char *func, int line, const char *fmt, ...);
+extern int _debug_printf(debug_level_t dl, const char *file, const char *func, int line,
+			 const char *fmt, ...);
 
 /* Better wrapper */
 #define debug_printf(dl, ...) _debug_printf(dl, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);
