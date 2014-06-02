@@ -74,7 +74,8 @@ static uint16_t in_cksum(const uint16_t * addr, uint32_t len, uint32_t csum)
 	return (answer);
 }
 
-static uint32_t nextproto6_cksum(const struct ip6_hdr *ip6, const uint16_t * data, uint32_t len, uint32_t next_proto)
+static uint32_t nextproto6_cksum(const struct ip6_hdr *ip6, const uint16_t * data, uint32_t len,
+				 uint32_t next_proto)
 {
 	union ip6_pseudo_hdr {
 		struct {
@@ -166,7 +167,8 @@ void ipv6_sendpkt(intrace_t * intrace, int seqSkew, int ackSkew)
 	sendmsg(intrace->sender.sndSocket, &msgh, MSG_NOSIGNAL);
 }
 
-static bool ipv6_extract_srcdst(intrace_t * intrace, struct msghdr *msg, struct in6_addr *src, struct in6_addr *dst)
+static bool ipv6_extract_srcdst(intrace_t * intrace, struct msghdr *msg, struct in6_addr *src,
+				struct in6_addr *dst)
 {
 	struct sockaddr_in6 *sa = (struct sockaddr_in6 *)msg->msg_name;
 	memcpy(src->s6_addr, sa->sin6_addr.s6_addr, sizeof(src->s6_addr));
@@ -208,10 +210,12 @@ void ipv6_tcp_sock_ready(intrace_t * intrace, struct msghdr *msg)
 
 	while (pthread_mutex_lock(&intrace->mutex)) ;
 
-	if (intrace->port && ntohs(tcph->th_dport) != intrace->port && ntohs(tcph->th_sport) != intrace->port) {
+	if (intrace->port && ntohs(tcph->th_dport) != intrace->port
+	    && ntohs(tcph->th_sport) != intrace->port) {
 /* UNSAFE_ Fix length check */
-	} else if ((tcph->th_flags & TH_ACK) && (((intrace->ack + intrace->paylSz) == ntohl(tcph->th_ack))
-						 || (intrace->ack + intrace->paylSz + 1) == ntohl(tcph->th_ack))
+	} else if ((tcph->th_flags & TH_ACK)
+		   && (((intrace->ack + intrace->paylSz) == ntohl(tcph->th_ack))
+		       || (intrace->ack + intrace->paylSz + 1) == ntohl(tcph->th_ack))
 		   && _IT_IPCMP(intrace, intrace->rip6.s6_addr, src.s6_addr)
 		   && intrace->cnt && intrace->cnt < MAX_HOPS) {
 
@@ -226,7 +230,8 @@ void ipv6_tcp_sock_ready(intrace_t * intrace, struct msghdr *msg)
 		   _IT_IPCMP(intrace, intrace->rip6.s6_addr, src.s6_addr) &&
 		   _IT_IPCMP(intrace, intrace->lip6.s6_addr, dst.s6_addr) &&
 		   (intrace->lport == ntohs(tcph->th_dport)) &&
-		   (intrace->rport == ntohs(tcph->th_sport)) && intrace->cnt && intrace->cnt < MAX_HOPS) {
+		   (intrace->rport == ntohs(tcph->th_sport)) && intrace->cnt
+		   && intrace->cnt < MAX_HOPS) {
 
 		int hop = intrace->cnt - 1;
 
@@ -295,7 +300,8 @@ void ipv6_icmp_sock_ready(intrace_t * intrace, struct msghdr *msg)
 	}
 
 	memcpy(intrace->listener.ip_trace6[id].s6_addr, src.s6_addr, sizeof(src.s6_addr));
-	memcpy(intrace->listener.icmp_trace6[id].s6_addr, pkt->iph.ip6_dst.s6_addr, sizeof(pkt->iph.ip6_dst.s6_addr));
+	memcpy(intrace->listener.icmp_trace6[id].s6_addr, pkt->iph.ip6_dst.s6_addr,
+	       sizeof(pkt->iph.ip6_dst.s6_addr));
 	intrace->listener.proto[id] = IPPROTO_ICMPV6;
 
 	if (id > intrace->maxhop)

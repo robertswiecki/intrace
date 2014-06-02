@@ -36,7 +36,8 @@
 
 #include <intrace.h>
 
-static uint32_t listener_get_packet(intrace_t * intrace, int sock, uint8_t * buf, uint32_t buflen, struct msghdr *msg)
+static uint32_t listener_get_packet(intrace_t * intrace, int sock, uint8_t * buf, uint32_t buflen,
+				    struct msghdr *msg)
 {
 	bzero(msg, sizeof(struct msghdr));
 
@@ -131,16 +132,21 @@ int listener_init(intrace_t * intrace)
 	}
 
 	int on = 1;
-	if (setsockopt(intrace->listener.rcvSocketTCP, _IT_IPPROTO(intrace), _IT_PKTINFO(intrace), &on, sizeof(on)) ==
-	    -1) {
+	if (setsockopt
+	    (intrace->listener.rcvSocketTCP, _IT_IPPROTO(intrace), _IT_PKTINFO(intrace), &on,
+	     sizeof(on)) == -1) {
 		strerror_r(errno, errbuf, sizeof(errbuf) - 1);
-		debug_printf(dlError, "listener: Cannot set IPV6_RECVPKTINFO on TCP socket, '%s'\n", errbuf);
+		debug_printf(dlError, "listener: Cannot set IPV6_RECVPKTINFO on TCP socket, '%s'\n",
+			     errbuf);
 		return errSocket;
 	}
-	if (setsockopt(intrace->listener.rcvSocketICMP, _IT_IPPROTO(intrace), _IT_PKTINFO(intrace), &on, sizeof(on)) ==
-	    -1) {
+	if (setsockopt
+	    (intrace->listener.rcvSocketICMP, _IT_IPPROTO(intrace), _IT_PKTINFO(intrace), &on,
+	     sizeof(on)) == -1) {
 		strerror_r(errno, errbuf, sizeof(errbuf) - 1);
-		debug_printf(dlError, "listener: Cannot set IPV6_RECVPKTINFO on ICMP socket, '%s'\n", errbuf);
+		debug_printf(dlError,
+			     "listener: Cannot set IPV6_RECVPKTINFO on ICMP socket, '%s'\n",
+			     errbuf);
 		return errSocket;
 	}
 

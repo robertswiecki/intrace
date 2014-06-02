@@ -99,7 +99,8 @@ bool threads_resolveIP(intrace_t * intrace, const char *hostname)
 		}
 	}
 
-	debug_printf(dlError, "Couldn't resolve '%s': '%s'\n", intrace->hostname, thread_err2asc(h_errno));
+	debug_printf(dlError, "Couldn't resolve '%s': '%s'\n", intrace->hostname,
+		     thread_err2asc(h_errno));
 	return false;
 }
 
@@ -126,7 +127,8 @@ int threads_process(intrace_t * intrace)
 		return errResolve;
 	}
 
-	debug_printf(dlDebug, "%s for '%s' resolved='%s'\n", _IT_IPSTR(intrace), intrace->hostname, haddr);
+	debug_printf(dlDebug, "%s for '%s' resolved='%s'\n", _IT_IPSTR(intrace), intrace->hostname,
+		     haddr);
 
 	if ((err = listener_init(intrace)) != errNone) {
 		debug_printf(dlFatal, "threads: Listener initialization failed, err=%d'\n", err);
@@ -134,7 +136,8 @@ int threads_process(intrace_t * intrace)
 	}
 
 	if ((err = sender_init(intrace)) != errNone) {
-		debug_printf(dlFatal, "threads: Packet sender initialization failed, err=%d\n", err);
+		debug_printf(dlFatal, "threads: Packet sender initialization failed, err=%d\n",
+			     err);
 		return err;
 	}
 
