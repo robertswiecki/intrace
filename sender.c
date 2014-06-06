@@ -51,15 +51,15 @@ static void sender_process(intrace_t * intrace)
 		if ((intrace->cnt > 0) && (intrace->cnt < MAX_HOPS)) {
 
 			if (intrace->isIPv6) {
-				ipv6_sendpkt(intrace, 0, 0);
+				ipv6_sendpkt(intrace, -1, -1);
 				ipv6_sendpkt(intrace, -1, 0);
-				ipv6_sendpkt(intrace, 0, 1);
-				ipv6_sendpkt(intrace, -1, 1);
+				ipv6_sendpkt(intrace, 0, -1);
+				ipv6_sendpkt(intrace, 0, 0);
 			} else {
-				ipv4_sendpkt(intrace, 0, 0);
+				ipv4_sendpkt(intrace, -1, -1);
 				ipv4_sendpkt(intrace, -1, 0);
-				ipv4_sendpkt(intrace, 0, 1);
-				ipv4_sendpkt(intrace, -1, 1);
+				ipv4_sendpkt(intrace, 0, -1);
+				ipv4_sendpkt(intrace, 0, 0);
 			}
 
 			intrace->cnt++;
