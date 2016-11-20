@@ -27,7 +27,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  */
 
-#include <config.h>
+#include "config.h"
 
 #include <errno.h>
 #include <string.h>
@@ -41,7 +41,7 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 
-#include <intrace.h>
+#include "intrace.h"
 
 static void sender_process(intrace_t * intrace)
 {
@@ -72,13 +72,11 @@ static void sender_process(intrace_t * intrace)
 
 int sender_init(intrace_t * intrace)
 {
-	char errbuf[256];
 	int tmp = 1;
 
 	intrace->sender.sndSocket = socket(_IT_AF(intrace), SOCK_RAW, IPPROTO_RAW);
 	if (intrace->sender.sndSocket < 0) {
-		strerror_r(errno, errbuf, sizeof(errbuf) - 1);
-		debug_printf(dlError, "sender: Cannot open raw socket, %s\n", errbuf);
+		debug_printf(dlError, "sender: Cannot open raw socket, %s\n", strerror(errno));
 		return errSocket;
 	}
 

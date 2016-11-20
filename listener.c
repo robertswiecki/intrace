@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  */
 
-#include <config.h>
+#include "config.h"
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -34,10 +34,10 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include <intrace.h>
+#include "intrace.h"
 
-static uint32_t listener_get_packet(intrace_t * intrace, int sock, uint8_t * buf, uint32_t buflen,
-				    struct msghdr *msg)
+static uint32_t listener_get_packet(intrace_t * intrace UNUSED, int sock, uint8_t * buf,
+				    uint32_t buflen, struct msghdr *msg)
 {
 	bzero(msg, sizeof(struct msghdr));
 
@@ -115,19 +115,17 @@ static void listener_process(intrace_t * intrace)
 
 int listener_init(intrace_t * intrace)
 {
-	char errbuf[512];
-
 	intrace->listener.rcvSocketTCP = socket(_IT_AF(intrace), SOCK_RAW, IPPROTO_TCP);
 	if (intrace->listener.rcvSocketTCP < 0) {
-		strerror_r(errno, errbuf, sizeof(errbuf) - 1);
-		debug_printf(dlError, "listener: Cannot open raw TCP socket, '%s'\n", errbuf);
+		debug_printf(dlError, "listener: Cannot open raw TCP socket, '%s'\n",
+			     strerror(errno));
 		return errSocket;
 	}
 
 	intrace->listener.rcvSocketICMP = socket(_IT_AF(intrace), SOCK_RAW, _IT_ICMPPROTO(intrace));
 	if (intrace->listener.rcvSocketTCP < 0) {
-		strerror_r(errno, errbuf, sizeof(errbuf) - 1);
-		debug_printf(dlError, "listener: Cannot open raw ICMPv6 socket, '%s'\n", errbuf);
+		debug_printf(dlError, "listener: Cannot open raw ICMPv6 socket, '%s'\n",
+			     strerror(errno));
 		return errSocket;
 	}
 
@@ -135,18 +133,16 @@ int listener_init(intrace_t * intrace)
 	if (setsockopt
 	    (intrace->listener.rcvSocketTCP, _IT_IPPROTO(intrace), _IT_PKTINFO(intrace), &on,
 	     sizeof(on)) == -1) {
-		strerror_r(errno, errbuf, sizeof(errbuf) - 1);
 		debug_printf(dlError, "listener: Cannot set IPV6_RECVPKTINFO on TCP socket, '%s'\n",
-			     errbuf);
+			     strerror(errno));
 		return errSocket;
 	}
 	if (setsockopt
 	    (intrace->listener.rcvSocketICMP, _IT_IPPROTO(intrace), _IT_PKTINFO(intrace), &on,
 	     sizeof(on)) == -1) {
-		strerror_r(errno, errbuf, sizeof(errbuf) - 1);
 		debug_printf(dlError,
 			     "listener: Cannot set IPV6_RECVPKTINFO on ICMP socket, '%s'\n",
-			     errbuf);
+			     strerror(errno));
 		return errSocket;
 	}
 

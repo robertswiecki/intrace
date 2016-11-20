@@ -27,7 +27,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  */
 
-#include <config.h>
+#include "config.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -43,16 +43,9 @@
 #include <net/if.h>
 #include <arpa/inet.h>
 #include <stdio.h>
-
 #include <stdlib.h>
 
-#include <intrace.h>
-
-#undef in6_pktinfo
-struct in6_pktinfo {
-	struct in6_addr ipi6_addr;	/* src/dst IPv6 address */
-	unsigned int ipi6_ifindex;	/* send/recv interface index */
-};
+#include "intrace.h"
 
 static uint16_t in_cksum(const uint16_t * addr, uint32_t len, uint32_t csum)
 {
@@ -186,7 +179,8 @@ static bool ipv6_extract_srcdst(intrace_t * intrace, struct msghdr *msg, struct 
 	return false;
 }
 
-static inline int ipv6_checkTcp(intrace_t * intrace, struct tcphdr *pkt, uint32_t pktlen)
+static inline int ipv6_checkTcp(intrace_t * intrace UNUSED, struct tcphdr *pkt UNUSED,
+				uint32_t pktlen)
 {
 	if (pktlen < sizeof(struct tcphdr))
 		return errPkt;

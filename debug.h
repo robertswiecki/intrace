@@ -21,6 +21,6 @@ extern int _debug_printf(debug_level_t dl, const char *file, const char *func, i
 #define debug_printf(dl, ...) _debug_printf(dl, __FILE__, __func__, __LINE__, __VA_ARGS__);
 
 /* Function initializes debug */
-extern int _debug_init(debug_level_t dl, char *l);
+extern int _debug_init(debug_level_t dl);
 
 #endif

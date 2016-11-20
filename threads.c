@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  */
 
-#include <config.h>
+#include "config.h"
 
 #include <pthread.h>
 #include <netdb.h>
@@ -33,7 +33,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-#include <intrace.h>
+#include "intrace.h"
 
 // For setuid case only
 static int threads_dropPrivs(void)

@@ -15,17 +15,20 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
 
-CC = gcc
-CFLAGS = -fPIC -O3 -g -ggdb -c -std=gnu99 -I. -pedantic \
-		 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
-		 -Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts -Wuninitialized \
-		 -Wreturn-type -Wpointer-arith -Wbad-function-cast -Wno-cast-align
+CC ?= gcc
+COMMON_CFLAGS = -fPIC -O3 -g -c -std=gnu11  -I. \
+                 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE \
+                 -Wall -Werror -Wextra
 
-LD = gcc
-LDFLAGS = -fPIC -lpthread
+COMMON_LDFLAGS = -fPIE -lpthread
+
+CFLAGS += $(COMMON_CFLAGS)
+
+LD ?= $(CC)
+LDFLAGS += $(COMMON_LDFLAGS)
 
 SRCS = debug.c intrace.c threads.c listener.c \
-	   sender.c display.c ipv4.c ipv6.c
+       sender.c display.c ipv4.c ipv6.c
 
 OBJS = $(SRCS:.c=.o)
 BIN = intrace
@@ -33,14 +36,15 @@ BIN = intrace
 all: $(BIN)
 
 .c.o: %.c
-	@(echo CC $<; $(CC) $(CFLAGS) $<)
+	$(CC) $(CFLAGS) $<
 
 $(BIN): $(OBJS)
-	@(echo LD $@; $(CC) -o $(BIN) $(OBJS) $(LDFLAGS))
+	$(CC) -o $(BIN) $(OBJS) $(LDFLAGS)
 
 clean:
-	@(echo CLEAN; rm -f core $(OBJS) $(BIN))
+	rm -f core $(OBJS) $(BIN)
 
 indent:
-	@(echo INDENT; indent -linux -l100 -lc100 -sob -c33 -cp33 *.c *.h; rm -f *~)
+	indent -linux -l100 -lc100 *.c *.h; rm -f *~
+
 # DO NOT DELETE

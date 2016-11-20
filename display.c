@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  */
 
-#include <config.h>
+#include "config.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -36,7 +36,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-#include <intrace.h>
+#include "intrace.h"
 
 static inline int display_selectInput(void)
 {
@@ -92,11 +92,11 @@ int display_process(intrace_t * intrace)
 		inet_ntop(_IT_AF(intrace), _IT_LIP(intrace), locAddr, sizeof(locAddr));
 		inet_ntop(_IT_AF(intrace), _IT_RIP(intrace), rmtAddr, sizeof(rmtAddr));
 
-		printf("%s %s -- R: %s/%d (%d) L: %s/%d\n", INTRACE_NAME,
-		       INTRACE_VERSION, rmtAddr, intrace->rport, intrace->port ? intrace->port : 0,
-		       locAddr, intrace->lport);
+		printf("=========================[ %s %s ]========================\n", INTRACE_NAME, INTRACE_VERSION);
 
-		printf("Payload Size: %u bytes, Seq: 0x%08x, Ack: 0x%08x\n", intrace->paylSz,
+		printf("Remote: %s/%d (%d)\n", rmtAddr, intrace->rport, intrace->port ? intrace->port : 0);
+		printf("Local: %s/%d\n", locAddr, intrace->lport);
+		printf("Payload Size: %zu bytes, Seq: 0x%08x, Ack: 0x%08x\n", intrace->paylSz,
 		       intrace->seq, intrace->ack);
 
 		if (intrace->cnt >= MAX_HOPS)

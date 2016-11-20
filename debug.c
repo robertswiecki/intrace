@@ -32,7 +32,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <intrace.h>
+#include "intrace.h"
 
 struct {
 	pthread_mutex_t mutex;
@@ -105,7 +105,7 @@ int _debug_printf(debug_level_t dl, const char *file, const char *func, int line
 }
 
 /* Function initializes debug */
-int _debug_init(debug_level_t dl, char *l)
+int _debug_init(debug_level_t dl)
 {
 	debug.dl = dl;
 	debug.f = stdout;

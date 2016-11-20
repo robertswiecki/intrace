@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  */
 
-#include <config.h>
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +31,7 @@
 #include <time.h>
 #include <string.h>
 
-#include <intrace.h>
+#include "intrace.h"
 
 extern char *optarg;
 
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 			dl = atoi(optarg);
 			break;
 		case 's':
-			intrace.paylSz = atoi(optarg);
+			intrace.paylSz = strtoul(optarg, NULL, 10);
 			break;
 		case '4':
 			intrace.familyMode = IPV4;
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Initialize subsystems */
-	if ((err = _debug_init(dl, NULL)) < 0) {
+	if ((err = _debug_init(dl)) < 0) {
 		fprintf(stderr, "Can't initialize debug, err=%d!\n", err);
 		return err;
 	}
@@ -87,11 +87,6 @@ int main(int argc, char **argv)
 			     "Usage: %s <-h hostname> [-p <port>] [-d <debuglevel>] [-s <payloadsize>] [-4] [-6]\n",
 			     argv[0]);
 		return errArg;
-	}
-
-	if (intrace.paylSz < 0) {
-		debug_printf(dlWarn, "Payload size set to 0\n");
-		intrace.paylSz = 0;
 	}
 
 	if (intrace.paylSz > MAX_PAYL_SZ) {

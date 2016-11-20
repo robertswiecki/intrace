@@ -27,7 +27,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
  */
 
-#include <config.h>
+#include "config.h"
 
 #include <errno.h>
 #include <string.h>
@@ -40,7 +40,7 @@
 #include <netinet/tcp.h>
 #include <net/if.h>
 
-#include <intrace.h>
+#include "intrace.h"
 
 static inline unsigned short ipv4_cksum_tcp(u_int16_t * h, u_int16_t * d, int dlen)
 {
@@ -168,7 +168,7 @@ void ipv4_sendpkt(intrace_t * intrace, int seqSkew, int ackSkew)
 	       sizeof(struct sockaddr));
 }
 
-static inline int ipv4_checkTcp(intrace_t * intrace, ip4pkt_t * pkt, uint32_t pktlen)
+static inline int ipv4_checkTcp(intrace_t * intrace UNUSED, ip4pkt_t * pkt, uint32_t pktlen)
 {
 	if (pktlen < sizeof(struct ip))
 		return errPkt;
